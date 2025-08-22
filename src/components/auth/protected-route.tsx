@@ -4,17 +4,18 @@ import { useAuth } from '@/contexts/auth-context'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
-export default function Home() {
+interface ProtectedRouteProps {
+  children: React.ReactNode
+  fallback?: React.ReactNode
+}
+
+export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
   const { user, loading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (!loading) {
-      if (user) {
-        router.push('/dashboard')
-      } else {
-        router.push('/auth')
-      }
+    if (!loading && !user) {
+      router.push('/auth')
     }
   }, [user, loading, router])
 
@@ -26,5 +27,9 @@ export default function Home() {
     )
   }
 
-  return null
+  if (!user) {
+    return fallback || null
+  }
+
+  return <>{children}</>
 }
