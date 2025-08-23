@@ -150,14 +150,14 @@ export const mockAPI = {
       subscriptions_count: 0,
       total_cost: 0,
     }
-    mockVendors.push(newVendor)
+    mockVendors.push(newVendor as unknown as typeof mockVendors[0])
     return { data: newVendor, error: null }
   },
 
   async updateVendor(id: string, vendorData: Partial<typeof mockVendors[0]>) {
     const index = mockVendors.findIndex(v => v.id === id)
     if (index !== -1) {
-      mockVendors[index] = { ...mockVendors[index], ...vendorData }
+      mockVendors[index] = { ...mockVendors[index], ...vendorData } as typeof mockVendors[0]
       return { data: mockVendors[index], error: null }
     }
     return { data: null, error: new Error('Vendor not found') }
@@ -178,14 +178,14 @@ export const mockAPI = {
       ...subscriptionData,
       id: Math.random().toString(36).substring(7),
     }
-    mockSubscriptions.push(newSubscription)
+    mockSubscriptions.push(newSubscription as typeof mockSubscriptions[0])
     return { data: newSubscription, error: null }
   },
 
   async updateSubscription(id: string, subscriptionData: Partial<typeof mockSubscriptions[0]>) {
     const index = mockSubscriptions.findIndex(s => s.id === id)
     if (index !== -1) {
-      mockSubscriptions[index] = { ...mockSubscriptions[index], ...subscriptionData }
+      mockSubscriptions[index] = { ...mockSubscriptions[index], ...subscriptionData } as typeof mockSubscriptions[0]
       return { data: mockSubscriptions[index], error: null }
     }
     return { data: null, error: new Error('Subscription not found') }

@@ -37,36 +37,6 @@ export default function VendorsPage() {
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
 
-  // Fetch vendors from Supabase
-  useEffect(() => {
-    fetchVendors()
-  }, [user, fetchVendors])
-  
-  // Set up real-time subscription
-  useEffect(() => {
-    if (!user) return
-    
-    const channel = supabase
-      .channel('vendors-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'vendors'
-        },
-        () => {
-          // Refresh vendors when any vendor changes
-          fetchVendors()
-        }
-      )
-      .subscribe()
-    
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [user, fetchVendors])
-
   const fetchVendors = useCallback(async () => {
     if (!user) return
     
@@ -116,12 +86,12 @@ export default function VendorsPage() {
           return {
             id: vendor.id,
             name: vendor.name,
-            website: vendor.website,
-            contact_email: vendor.contact_email,
-            contact_phone: vendor.contact_phone,
+            website: vendor.website || undefined,
+            contact_email: vendor.contact_email || undefined,
+            contact_phone: vendor.contact_phone || undefined,
             category: vendor.categories?.name || 'Uncategorized',
             status: vendor.status,
-            description: vendor.description,
+            description: vendor.description || undefined,
             subscriptions_count,
             total_cost: Math.round(total_cost * 100) / 100
           }
@@ -135,6 +105,36 @@ export default function VendorsPage() {
       setLoading(false)
     }
   }, [user])
+
+  // Fetch vendors from Supabase
+  useEffect(() => {
+    fetchVendors()
+  }, [fetchVendors])
+  
+  // Set up real-time subscription
+  useEffect(() => {
+    if (!user) return
+    
+    const channel = supabase
+      .channel('vendors-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'vendors'
+        },
+        () => {
+          // Refresh vendors when any vendor changes
+          fetchVendors()
+        }
+      )
+      .subscribe()
+    
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, fetchVendors])
 
   const filteredVendors = vendors.filter(vendor =>
     vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
