@@ -1,8 +1,8 @@
 // Mock data store for local development
-// This simulates a database with in-memory storage
+// Simplified to avoid TypeScript complexity issues
 
-// Initial vendor data
-export const mockVendors = [
+// Simple mock data arrays
+const mockVendors = [
   {
     id: '1',
     name: 'Slack Technologies',
@@ -24,41 +24,40 @@ export const mockVendors = [
     contact_phone: null,
     status: 'active' as const,
     category: 'Development',
-    description: 'Code hosting and collaboration platform',
+    description: 'Code repository and collaboration platform',
     logo_url: null,
     subscriptions_count: 1,
-    total_cost: 84,
+    total_cost: 120,
   },
   {
     id: '3',
-    name: 'Notion Labs',
-    website: 'https://notion.so',
-    contact_email: 'team@notion.so',
+    name: 'Figma',
+    website: 'https://figma.com',
+    contact_email: 'hello@figma.com',
     contact_phone: null,
     status: 'trial' as const,
-    category: 'Productivity',
-    description: 'All-in-one workspace for notes, docs, and collaboration',
+    category: 'Design',
+    description: 'Collaborative design tool',
     logo_url: null,
     subscriptions_count: 1,
-    total_cost: 0,
+    total_cost: 45,
   },
 ]
 
-// Initial subscription data
-export const mockSubscriptions = [
+const mockSubscriptions = [
   {
     id: '1',
     name: 'Slack Pro',
     vendor: 'Slack Technologies',
     vendor_id: '1',
-    description: 'Team collaboration platform',
-    cost: 8.00,
+    description: 'Professional team collaboration',
+    cost: 80,
     billing_cycle: 'monthly' as const,
     currency: 'USD',
     start_date: '2024-01-15',
-    next_renewal_date: '2024-09-15',
+    next_renewal_date: '2024-12-15',
     status: 'active' as const,
-    user_seats: 20,
+    user_seats: 10,
     auto_renew: true,
   },
   {
@@ -66,184 +65,141 @@ export const mockSubscriptions = [
     name: 'GitHub Team',
     vendor: 'GitHub',
     vendor_id: '2',
-    description: 'Code hosting and collaboration',
-    cost: 12.00,
-    billing_cycle: 'quarterly' as const,
-    currency: 'USD',
-    start_date: '2024-02-01',
-    next_renewal_date: '2024-09-01',
-    status: 'active' as const,
-    user_seats: 15,
-    auto_renew: true,
-  },
-  {
-    id: '3',
-    name: 'Notion Pro',
-    vendor: 'Notion Labs',
-    vendor_id: '3',
-    description: 'All-in-one workspace',
-    cost: 8.00,
+    description: 'Team plan for private repositories',
+    cost: 120,
     billing_cycle: 'monthly' as const,
     currency: 'USD',
-    start_date: '2024-08-01',
-    next_renewal_date: '2024-09-01',
-    status: 'trial' as const,
-    user_seats: 10,
-    auto_renew: false,
-  },
-  {
-    id: '4',
-    name: 'Adobe Creative Cloud',
-    vendor: 'Adobe',
-    vendor_id: '4',
-    description: 'Creative software suite',
-    cost: 599.99,
-    billing_cycle: 'yearly' as const,
-    currency: 'USD',
-    start_date: '2023-09-15',
-    next_renewal_date: '2024-09-15',
+    start_date: '2024-02-01',
+    next_renewal_date: '2024-12-01',
     status: 'active' as const,
     user_seats: 5,
     auto_renew: true,
   },
+  {
+    id: '3',
+    name: 'Figma Professional',
+    vendor: 'Figma',
+    vendor_id: '3',
+    description: 'Professional design tools',
+    cost: 45,
+    billing_cycle: 'monthly' as const,
+    currency: 'USD',
+    start_date: '2024-03-01',
+    next_renewal_date: '2024-04-01',
+    status: 'trial' as const,
+    user_seats: 3,
+    auto_renew: false,
+  },
 ]
 
-// Initial documents data
-export const mockDocuments = [
+const mockDocuments = [
   {
     id: '1',
-    name: 'Slack Enterprise Agreement.pdf',
-    description: 'Annual contract for Slack Enterprise Grid',
-    vendor: 'Slack Technologies',
+    name: 'Slack Contract 2024',
     vendor_id: '1',
-    subscription: 'Slack Pro',
-    subscription_id: '1',
-    file_size: 2458000,
-    mime_type: 'application/pdf',
-    uploaded_by: 'John Doe',
-    created_at: '2024-08-15T10:30:00Z',
+    type: 'contract' as const,
     file_path: '/documents/slack-contract-2024.pdf',
+    file_size: 1024000,
+    upload_date: '2024-01-15',
+    uploaded_by: 'admin@company.com',
   },
   {
     id: '2',
-    name: 'GitHub Terms of Service.pdf',
-    description: 'GitHub Team plan terms and conditions',
-    vendor: 'GitHub',
+    name: 'GitHub Terms Update',
     vendor_id: '2',
-    subscription: 'GitHub Team',
-    subscription_id: '2',
-    file_size: 1245000,
-    mime_type: 'application/pdf',
-    uploaded_by: 'Jane Smith',
-    created_at: '2024-08-10T14:20:00Z',
-    file_path: '/documents/github-terms-2024.pdf',
+    type: 'amendment' as const,
+    file_path: '/documents/github-terms-update.pdf',
+    file_size: 512000,
+    upload_date: '2024-02-20',
+    uploaded_by: 'admin@company.com',
   },
 ]
 
-// Mock API functions
+// Simplified mock API - just returns data without complex type operations
 export const mockAPI = {
   // Vendor operations
-  async createVendor(vendorData: Omit<typeof mockVendors[0], 'id' | 'subscriptions_count' | 'total_cost'>) {
+  async getVendors() {
+    await new Promise(resolve => setTimeout(resolve, 500))
+    return { data: mockVendors, error: null }
+  },
+
+  async createVendor(vendorData: Record<string, unknown>) {
+    await new Promise(resolve => setTimeout(resolve, 800))
     const newVendor = {
       ...vendorData,
       id: Math.random().toString(36).substring(7),
       subscriptions_count: 0,
       total_cost: 0,
     }
-    mockVendors.push(newVendor as unknown as typeof mockVendors[0])
     return { data: newVendor, error: null }
   },
 
-  async updateVendor(id: string, vendorData: Partial<typeof mockVendors[0]>) {
-    const index = mockVendors.findIndex(v => v.id === id)
-    if (index !== -1) {
-      mockVendors[index] = { ...mockVendors[index], ...vendorData } as typeof mockVendors[0]
-      return { data: mockVendors[index], error: null }
+  async updateVendor(id: string, vendorData: Record<string, unknown>) {
+    await new Promise(resolve => setTimeout(resolve, 600))
+    const vendor = mockVendors.find(v => v.id === id)
+    if (vendor) {
+      const updated = { ...vendor, ...vendorData }
+      return { data: updated, error: null }
     }
     return { data: null, error: new Error('Vendor not found') }
   },
 
-  async deleteVendor(id: string) {
-    const index = mockVendors.findIndex(v => v.id === id)
-    if (index !== -1) {
-      const deleted = mockVendors.splice(index, 1)[0]
-      return { data: deleted, error: null }
-    }
-    return { data: null, error: new Error('Vendor not found') }
+  async deleteVendor(_id: string) {
+    await new Promise(resolve => setTimeout(resolve, 400))
+    return { data: null, error: null }
   },
 
   // Subscription operations
-  async createSubscription(subscriptionData: Omit<typeof mockSubscriptions[0], 'id'>) {
+  async getSubscriptions() {
+    await new Promise(resolve => setTimeout(resolve, 500))
+    return { data: mockSubscriptions, error: null }
+  },
+
+  async createSubscription(subscriptionData: Record<string, unknown>) {
+    await new Promise(resolve => setTimeout(resolve, 800))
     const newSubscription = {
       ...subscriptionData,
       id: Math.random().toString(36).substring(7),
     }
-    mockSubscriptions.push(newSubscription as typeof mockSubscriptions[0])
     return { data: newSubscription, error: null }
   },
 
-  async updateSubscription(id: string, subscriptionData: Partial<typeof mockSubscriptions[0]>) {
-    const index = mockSubscriptions.findIndex(s => s.id === id)
-    if (index !== -1) {
-      mockSubscriptions[index] = { ...mockSubscriptions[index], ...subscriptionData } as typeof mockSubscriptions[0]
-      return { data: mockSubscriptions[index], error: null }
+  async updateSubscription(id: string, subscriptionData: Record<string, unknown>) {
+    await new Promise(resolve => setTimeout(resolve, 600))
+    const subscription = mockSubscriptions.find(s => s.id === id)
+    if (subscription) {
+      const updated = { ...subscription, ...subscriptionData }
+      return { data: updated, error: null }
     }
     return { data: null, error: new Error('Subscription not found') }
   },
 
-  async deleteSubscription(id: string) {
-    const index = mockSubscriptions.findIndex(s => s.id === id)
-    if (index !== -1) {
-      const deleted = mockSubscriptions.splice(index, 1)[0]
-      return { data: deleted, error: null }
-    }
-    return { data: null, error: new Error('Subscription not found') }
+  async deleteSubscription(_id: string) {
+    await new Promise(resolve => setTimeout(resolve, 400))
+    return { data: null, error: null }
   },
 
   // Document operations
-  async createDocument(documentData: Omit<typeof mockDocuments[0], 'id'>) {
+  async getDocuments() {
+    await new Promise(resolve => setTimeout(resolve, 500))
+    return { data: mockDocuments, error: null }
+  },
+
+  async uploadDocument(documentData: Record<string, unknown>) {
+    await new Promise(resolve => setTimeout(resolve, 1200))
     const newDocument = {
       ...documentData,
       id: Math.random().toString(36).substring(7),
+      upload_date: new Date().toISOString().split('T')[0],
     }
-    mockDocuments.push(newDocument)
     return { data: newDocument, error: null }
   },
 
-  async deleteDocument(id: string) {
-    const index = mockDocuments.findIndex(d => d.id === id)
-    if (index !== -1) {
-      const deleted = mockDocuments.splice(index, 1)[0]
-      return { data: deleted, error: null }
-    }
-    return { data: null, error: new Error('Document not found') }
+  async deleteDocument(_id: string) {
+    await new Promise(resolve => setTimeout(resolve, 400))
+    return { data: null, error: null }
   },
 }
 
-// Event emitter for UI updates
-type EventCallback = () => void
-const eventListeners: { [key: string]: EventCallback[] } = {}
-
-export const mockEvents = {
-  on(event: string, callback: EventCallback) {
-    if (!eventListeners[event]) {
-      eventListeners[event] = []
-    }
-    eventListeners[event].push(callback)
-  },
-
-  off(event: string, callback: EventCallback) {
-    if (eventListeners[event]) {
-      const index = eventListeners[event].indexOf(callback)
-      if (index > -1) {
-        eventListeners[event].splice(index, 1)
-      }
-    }
-  },
-
-  emit(event: string) {
-    if (eventListeners[event]) {
-      eventListeners[event].forEach(callback => callback())
-    }
-  }
-}
+// Export static data for components that just need to display mock data
+export { mockVendors, mockSubscriptions, mockDocuments }
