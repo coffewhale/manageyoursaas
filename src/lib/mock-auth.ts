@@ -29,7 +29,7 @@ export const mockAuth = {
     }
   },
 
-  async signIn(email: string, password: string) {
+  async signIn(email: string, _password: string) {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000))
     
@@ -64,7 +64,7 @@ export const mockAuth = {
     return { error: null }
   },
 
-  async resetPassword(email: string) {
+  async resetPassword(_email: string) {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000))
     return { error: null }
@@ -86,7 +86,7 @@ export const mockAuth = {
     }
   },
 
-  onAuthStateChange(callback: (event: string, session: any) => void) {
+  onAuthStateChange(callback: (event: string, session: unknown) => void) {
     // Set up mock auth state changes
     const mockSession = localStorage.getItem('mock-session')
     if (mockSession) {

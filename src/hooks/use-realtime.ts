@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
-import { RealtimeChannel } from '@supabase/supabase-js'
+import { useState } from 'react'
+// import { supabase } from '@/lib/supabase'
+// import { RealtimeChannel } from '@supabase/supabase-js'
 
 export function useRealtimeSubscription<T>(
   table: string,
@@ -8,8 +8,8 @@ export function useRealtimeSubscription<T>(
   initialData: T[] = []
 ) {
   const [data, setData] = useState<T[]>(initialData)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [loading] = useState(false)
+  const [error] = useState<string | null>(null)
 
   // TODO: Implement real-time subscription when connected to Supabase
   // This is a placeholder hook for now

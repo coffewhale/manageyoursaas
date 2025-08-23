@@ -85,6 +85,12 @@ SUPABASE_SERVICE_ROLE_KEY=
 - File upload and document viewer
 - Search and filtering capabilities
 
+## Design Requirements
+- Clean, professional interface suitable for business users
+- Mobile-first responsive design
+- Accessibility compliant (WCAG 2.1 AA)
+- Support for dark/light mode toggle
+
 ## Nice-to-Have Features
 
 - Integration with accounting software (QuickBooks, Xero)
@@ -95,3 +101,4 @@ SUPABASE_SERVICE_ROLE_KEY=
 - Automated vendor discovery via email parsing
 - Real-time activity feed
 - Advanced analytics with custom PostgreSQL views
+

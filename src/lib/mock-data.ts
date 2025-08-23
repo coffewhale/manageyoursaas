@@ -2,7 +2,7 @@
 // This simulates a database with in-memory storage
 
 // Initial vendor data
-export let mockVendors = [
+export const mockVendors = [
   {
     id: '1',
     name: 'Slack Technologies',
@@ -45,7 +45,7 @@ export let mockVendors = [
 ]
 
 // Initial subscription data
-export let mockSubscriptions = [
+export const mockSubscriptions = [
   {
     id: '1',
     name: 'Slack Pro',
@@ -109,7 +109,7 @@ export let mockSubscriptions = [
 ]
 
 // Initial documents data
-export let mockDocuments = [
+export const mockDocuments = [
   {
     id: '1',
     name: 'Slack Enterprise Agreement.pdf',
