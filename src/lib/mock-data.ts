@@ -48,7 +48,6 @@ const mockSubscriptions = [
   {
     id: '1',
     name: 'Slack Pro',
-    vendor: 'Slack Technologies',
     vendor_id: '1',
     description: 'Professional team collaboration',
     cost: 80,
@@ -59,11 +58,13 @@ const mockSubscriptions = [
     status: 'active' as const,
     user_seats: 10,
     auto_renew: true,
+    internal_contact: 'Sarah Johnson (sarah.johnson@company.com)',
+    team: 'Engineering',
+    vendors: { name: 'Slack Technologies', status: 'active' },
   },
   {
     id: '2',
     name: 'GitHub Team',
-    vendor: 'GitHub',
     vendor_id: '2',
     description: 'Team plan for private repositories',
     cost: 120,
@@ -74,11 +75,13 @@ const mockSubscriptions = [
     status: 'active' as const,
     user_seats: 5,
     auto_renew: true,
+    internal_contact: 'Mike Chen (mike.chen@company.com)',
+    team: 'Product',
+    vendors: { name: 'GitHub', status: 'active' },
   },
   {
     id: '3',
     name: 'Figma Professional',
-    vendor: 'Figma',
     vendor_id: '3',
     description: 'Professional design tools',
     cost: 45,
@@ -89,6 +92,9 @@ const mockSubscriptions = [
     status: 'trial' as const,
     user_seats: 3,
     auto_renew: false,
+    internal_contact: 'Lisa Wang (lisa.wang@company.com)',
+    team: 'Marketing',
+    vendors: { name: 'Figma', status: 'trial' },
   },
 ]
 
@@ -130,22 +136,31 @@ export const mockAPI = {
       id: Math.random().toString(36).substring(7),
       subscriptions_count: 0,
       total_cost: 0,
+      category: vendorData.category || 'Uncategorized',
     }
+    // Add to mock vendors array for persistence in session
+    mockVendors.push(newVendor as any)
     return { data: newVendor, error: null }
   },
 
   async updateVendor(id: string, vendorData: Record<string, unknown>) {
     await new Promise(resolve => setTimeout(resolve, 600))
-    const vendor = mockVendors.find(v => v.id === id)
-    if (vendor) {
-      const updated = { ...vendor, ...vendorData }
-      return { data: updated, error: null }
+    const vendorIndex = mockVendors.findIndex(v => v.id === id)
+    if (vendorIndex !== -1) {
+      // Update the vendor in the array
+      mockVendors[vendorIndex] = { ...mockVendors[vendorIndex], ...vendorData }
+      return { data: mockVendors[vendorIndex], error: null }
     }
     return { data: null, error: new Error('Vendor not found') }
   },
 
-  async deleteVendor(_id: string) {
+  async deleteVendor(id: string) {
     await new Promise(resolve => setTimeout(resolve, 400))
+    const vendorIndex = mockVendors.findIndex(v => v.id === id)
+    if (vendorIndex !== -1) {
+      // Remove the vendor from the array
+      mockVendors.splice(vendorIndex, 1)
+    }
     return { data: null, error: null }
   },
 
@@ -157,25 +172,39 @@ export const mockAPI = {
 
   async createSubscription(subscriptionData: Record<string, unknown>) {
     await new Promise(resolve => setTimeout(resolve, 800))
+    
+    // Find the vendor for this subscription
+    const vendor = mockVendors.find(v => v.id === subscriptionData.vendor_id)
+    
     const newSubscription = {
       ...subscriptionData,
       id: Math.random().toString(36).substring(7),
+      vendors: vendor ? { name: vendor.name, status: vendor.status } : null,
     }
+    
+    // Add to mock subscriptions array for persistence in session
+    mockSubscriptions.push(newSubscription as any)
     return { data: newSubscription, error: null }
   },
 
   async updateSubscription(id: string, subscriptionData: Record<string, unknown>) {
     await new Promise(resolve => setTimeout(resolve, 600))
-    const subscription = mockSubscriptions.find(s => s.id === id)
-    if (subscription) {
-      const updated = { ...subscription, ...subscriptionData }
-      return { data: updated, error: null }
+    const subscriptionIndex = mockSubscriptions.findIndex(s => s.id === id)
+    if (subscriptionIndex !== -1) {
+      // Update the subscription in the array
+      mockSubscriptions[subscriptionIndex] = { ...mockSubscriptions[subscriptionIndex], ...subscriptionData }
+      return { data: mockSubscriptions[subscriptionIndex], error: null }
     }
     return { data: null, error: new Error('Subscription not found') }
   },
 
-  async deleteSubscription(_id: string) {
+  async deleteSubscription(id: string) {
     await new Promise(resolve => setTimeout(resolve, 400))
+    const subscriptionIndex = mockSubscriptions.findIndex(s => s.id === id)
+    if (subscriptionIndex !== -1) {
+      // Remove the subscription from the array
+      mockSubscriptions.splice(subscriptionIndex, 1)
+    }
     return { data: null, error: null }
   },
 

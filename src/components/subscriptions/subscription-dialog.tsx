@@ -9,8 +9,22 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Switch } from '@/components/ui/switch'
-import { supabaseService, supabase } from '@/lib/supabase-client'
+import { apiService } from '@/lib/api-service'
 import { useAuth } from '@/contexts/auth-context'
+
+// Predefined teams
+const PREDEFINED_TEAMS = [
+  'Finance',
+  'Sales',
+  'Marketing', 
+  'Engineering',
+  'Product',
+  'Operations',
+  'HR',
+  'Customer Success',
+  'IT',
+  'Legal'
+]
 
 interface Subscription {
   id?: string
@@ -25,6 +39,8 @@ interface Subscription {
   status: 'active' | 'inactive' | 'trial' | 'cancelled' | 'expired'
   user_seats?: number | null
   auto_renew?: boolean | null
+  internal_contact?: string | null
+  team?: string | null
 }
 
 interface Vendor {
@@ -55,10 +71,15 @@ export function SubscriptionDialog({ isOpen, onClose, subscription, onSubscripti
     status: 'active',
     user_seats: 1,
     auto_renew: true,
+    internal_contact: '',
+    team: '',
   })
   const [loading, setLoading] = useState(false)
   const [vendorsLoading, setVendorsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [customTeams, setCustomTeams] = useState<string[]>([])
+  const [showCustomTeamInput, setShowCustomTeamInput] = useState(false)
+  const [newTeamName, setNewTeamName] = useState('')
 
   const isEditing = !!subscription
 
@@ -69,11 +90,7 @@ export function SubscriptionDialog({ isOpen, onClose, subscription, onSubscripti
       
       try {
         setVendorsLoading(true)
-        const { data: vendorsData, error } = await supabase
-          .from('vendors')
-          .select('id, name, status')
-          .eq('status', 'active')
-          .order('name')
+        const { data: vendorsData, error } = await apiService.getVendors()
         
         if (error) throw error
         setVendors(vendorsData || [])
@@ -101,6 +118,8 @@ export function SubscriptionDialog({ isOpen, onClose, subscription, onSubscripti
         status: subscription.status,
         user_seats: subscription.user_seats || 1,
         auto_renew: subscription.auto_renew ?? true,
+        internal_contact: subscription.internal_contact || '',
+        team: subscription.team || '',
       })
     } else {
       const today = new Date().toISOString().split('T')[0]
@@ -120,6 +139,8 @@ export function SubscriptionDialog({ isOpen, onClose, subscription, onSubscripti
         status: 'active',
         user_seats: 1,
         auto_renew: true,
+        internal_contact: '',
+        team: '',
       })
     }
     setError(null)
@@ -131,34 +152,28 @@ export function SubscriptionDialog({ isOpen, onClose, subscription, onSubscripti
     setError(null)
 
     try {
+      const subscriptionData = {
+        name: formData.name,
+        vendor_id: formData.vendor_id,
+        description: formData.description || null,
+        cost: formData.cost,
+        billing_cycle: formData.billing_cycle,
+        currency: formData.currency,
+        start_date: formData.start_date,
+        next_renewal_date: formData.next_renewal_date,
+        status: formData.status,
+        user_seats: formData.user_seats || null,
+        auto_renew: formData.auto_renew,
+        internal_contact: formData.internal_contact || null,
+        team: formData.team || null
+      }
+
       if (isEditing) {
-        await supabaseService.updateSubscription(subscription.id!, {
-          name: formData.name,
-          vendor_id: formData.vendor_id,
-          description: formData.description || null,
-          cost: formData.cost,
-          billing_cycle: formData.billing_cycle,
-          currency: formData.currency,
-          start_date: formData.start_date,
-          next_renewal_date: formData.next_renewal_date,
-          status: formData.status,
-          user_seats: formData.user_seats || null,
-          auto_renew: formData.auto_renew
-        })
+        const { error } = await apiService.updateSubscription(subscription.id!, subscriptionData)
+        if (error) throw error
       } else {
-        await supabaseService.createSubscription({
-          name: formData.name,
-          vendor_id: formData.vendor_id,
-          description: formData.description || null,
-          cost: formData.cost,
-          billing_cycle: formData.billing_cycle,
-          currency: formData.currency,
-          start_date: formData.start_date,
-          next_renewal_date: formData.next_renewal_date,
-          status: formData.status,
-          user_seats: formData.user_seats || null,
-          auto_renew: formData.auto_renew
-        })
+        const { error } = await apiService.createSubscription(subscriptionData)
+        if (error) throw error
       }
       
       onSubscriptionUpdated?.()
@@ -176,6 +191,28 @@ export function SubscriptionDialog({ isOpen, onClose, subscription, onSubscripti
       [field]: value
     }))
   }
+
+  const handleTeamChange = (value: string) => {
+    if (value === 'custom') {
+      setShowCustomTeamInput(true)
+      setNewTeamName('')
+    } else {
+      handleChange('team', value)
+      setShowCustomTeamInput(false)
+    }
+  }
+
+  const handleAddCustomTeam = () => {
+    if (newTeamName.trim()) {
+      setCustomTeams(prev => [...prev, newTeamName.trim()])
+      handleChange('team', newTeamName.trim())
+      setNewTeamName('')
+      setShowCustomTeamInput(false)
+    }
+  }
+
+  // Get all available teams (predefined + custom)
+  const allTeams = [...PREDEFINED_TEAMS, ...customTeams]
 
   const calculateNextRenewal = (startDate: string, billingCycle: string) => {
     const start = new Date(startDate)
@@ -270,6 +307,53 @@ export function SubscriptionDialog({ isOpen, onClose, subscription, onSubscripti
               placeholder="Brief description of the subscription..."
               rows={2}
             />
+          </div>
+
+          {/* New fields: Internal Contact and Team */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="internal_contact">Internal Contact</Label>
+              <Input
+                id="internal_contact"
+                value={formData.internal_contact || ''}
+                onChange={(e) => handleChange('internal_contact', e.target.value)}
+                placeholder="e.g., John Smith (john@company.com)"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="team">Team</Label>
+              <Select 
+                value={formData.team || ''} 
+                onValueChange={handleTeamChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a team" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allTeams.map((team) => (
+                    <SelectItem key={team} value={team}>
+                      {team}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="custom">+ Add Custom Team</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {showCustomTeamInput && (
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    value={newTeamName}
+                    onChange={(e) => setNewTeamName(e.target.value)}
+                    placeholder="Enter team name"
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddCustomTeam()}
+                  />
+                  <Button type="button" onClick={handleAddCustomTeam} size="sm">
+                    Add
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

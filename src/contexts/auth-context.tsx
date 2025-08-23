@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session, AuthError } from '@supabase/supabase-js'
 import { supabase, supabaseService, Profile, Organization } from '@/lib/supabase-client'
+import { mockAuth, isMockMode } from '@/lib/mock-auth'
 
 interface AuthContextType {
   user: User | null
@@ -28,6 +29,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (isMockMode()) {
+      // Handle mock mode
+      const initMockSession = async () => {
+        const mockSession = mockAuth.getSession()
+        const { data } = await mockSession
+        
+        if (data.session) {
+          setSession(data.session as Session)
+          setUser(data.session.user as User)
+          // Set mock profile and organization
+          setProfile({
+            id: 'mock-user-id',
+            email: data.session.user.email,
+            full_name: data.session.user.user_metadata?.full_name || 'Test User',
+            avatar_url: null,
+            organization_id: 'mock-org-id',
+            role: 'admin',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          } as Profile)
+          setOrganization({
+            id: 'mock-org-id',
+            name: data.session.user.user_metadata?.organization_name || 'Test Organization',
+            description: 'Mock organization for testing',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          } as Organization)
+        }
+        setLoading(false)
+      }
+
+      initMockSession()
+      
+      // Listen for mock auth changes
+      mockAuth.onAuthStateChange((event, session) => {
+        setSession(session as Session)
+        setUser(session ? (session as any).user as User : null)
+        if (event === 'SIGNED_OUT') {
+          setProfile(null)
+          setOrganization(null)
+        }
+      })
+      
+      return
+    }
+
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session)
@@ -84,6 +131,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
+    if (isMockMode()) {
+      const { error } = await mockAuth.signIn(email, password)
+      if (!error && typeof window !== 'undefined') {
+        // Store mock session
+        const mockSession = {
+          user: {
+            id: 'mock-user-id',
+            email,
+            user_metadata: { full_name: 'Test User' }
+          }
+        }
+        localStorage.setItem('mock-session', JSON.stringify(mockSession))
+        
+        // Manually trigger state updates for mock mode
+        setUser(mockSession.user as User)
+        setSession(mockSession as Session)
+        setProfile({
+          id: 'mock-user-id',
+          email,
+          full_name: 'Test User',
+          avatar_url: null,
+          organization_id: 'mock-org-id',
+          role: 'admin',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        } as Profile)
+        setOrganization({
+          id: 'mock-org-id',
+          name: 'Test Organization',
+          description: 'Mock organization for testing',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        } as Organization)
+      }
+      return { error }
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -92,6 +176,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signUp = async (email: string, password: string, fullName?: string, organizationName?: string) => {
+    if (isMockMode()) {
+      const { error } = await mockAuth.signUp(email, password, fullName)
+      if (!error && typeof window !== 'undefined') {
+        // Store mock session
+        const mockSession = {
+          user: {
+            id: 'mock-user-id',
+            email,
+            user_metadata: { full_name: fullName || '', organization_name: organizationName || '' }
+          }
+        }
+        localStorage.setItem('mock-session', JSON.stringify(mockSession))
+      }
+      return { error }
+    }
+
     const { error } = await supabase.auth.signUp({
       email,
       password,

@@ -73,7 +73,7 @@ export default function OnboardingPage() {
           </div>
           <CardTitle className="text-2xl">Welcome to SaaS Manager!</CardTitle>
           <CardDescription>
-            Let's set up your organization to get started
+            Let&apos;s set up your organization to get started
           </CardDescription>
         </CardHeader>
 

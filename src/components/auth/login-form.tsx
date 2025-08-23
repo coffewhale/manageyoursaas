@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,6 +24,7 @@ export function LoginForm({ onToggleMode }: LoginFormProps) {
   const [resendSuccess, setResendSuccess] = useState(false)
   const [resetEmailSent, setResetEmailSent] = useState(false)
   const { signIn, resendConfirmation, resetPassword } = useAuth()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,6 +44,9 @@ export function LoginForm({ onToggleMode }: LoginFormProps) {
           errorMessage.toLowerCase().includes('verify your email')) {
         setShowResendButton(true)
       }
+    } else {
+      // Successful login - redirect to dashboard
+      router.push('/dashboard')
     }
     setLoading(false)
   }

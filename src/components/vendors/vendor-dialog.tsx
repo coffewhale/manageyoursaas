@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { supabase } from '@/lib/supabase'
+import { apiService } from '@/lib/api-service'
 import { useAuth } from '@/contexts/auth-context'
 
 interface Vendor {
@@ -62,11 +62,13 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
   // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
-      const { data } = await supabase
-        .from('categories')
-        .select('id, name')
-        .order('name')
-      setCategories(data || [])
+      try {
+        const { data } = await apiService.getCategories()
+        setCategories(data || [])
+      } catch (error) {
+        console.error('Error fetching categories:', error)
+        setCategories([])
+      }
     }
     fetchCategories()
   }, [])
@@ -104,41 +106,6 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
     try {
       if (!user) throw new Error('User not authenticated')
       
-      // Get user's organization_id
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('id', user.id)
-        .single()
-        
-      // If user doesn't have an organization, create one automatically
-      if (!(profile as unknown as { organization_id: string })?.organization_id) {
-        try {
-          const { data, error } = await supabase.rpc('initialize_user_organization', {
-            org_name: 'My Organization',
-            user_full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
-          })
-          
-          if (error) throw error
-          
-          // Refresh profile data
-          const { data: updatedProfile } = await supabase
-            .from('profiles')
-            .select('organization_id')
-            .eq('id', user.id)
-            .single()
-            
-          if (!(updatedProfile as unknown as { organization_id: string })?.organization_id) {
-            throw new Error('Failed to create organization')
-          }
-          
-          // Use the updated profile
-          profile.organization_id = updatedProfile.organization_id
-        } catch (initError) {
-          throw new Error(`Failed to initialize organization: ${initError.message}`)
-        }
-      }
-      
       // Find category ID
       const category = categories.find(c => c.name === formData.category)
       
@@ -149,22 +116,15 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
         contact_phone: formData.contact_phone || null,
         status: formData.status,
         category_id: category?.id || null,
+        category: formData.category, // Also include category name for mock mode
         description: formData.description || null,
-        organization_id: (profile as unknown as { organization_id: string }).organization_id
       }
 
       if (isEditing && vendor?.id) {
-        const { error } = await supabase
-          .from('vendors')
-          .update(vendorData as any)
-          .eq('id', vendor.id)
-          
+        const { error } = await apiService.updateVendor(vendor.id, vendorData)
         if (error) throw error
       } else {
-        const { error } = await supabase
-          .from('vendors')
-          .insert([vendorData as any])
-          
+        const { error } = await apiService.createVendor(vendorData)
         if (error) throw error
       }
       

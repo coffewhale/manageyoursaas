@@ -5,16 +5,17 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { SubscriptionDialog } from '@/components/subscriptions/subscription-dialog'
-import { Plus, Search, Calendar, DollarSign, Users, MoreHorizontal, AlertTriangle } from 'lucide-react'
+import { Plus, Search, Calendar, DollarSign, Users, MoreHorizontal, AlertTriangle, Filter, X } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { supabaseService } from '@/lib/supabase-client'
+import { apiService } from '@/lib/api-service'
 import { useAuth } from '@/contexts/auth-context'
 
 interface Subscription {
@@ -30,6 +31,8 @@ interface Subscription {
   next_renewal_date?: string | null
   status: 'active' | 'inactive' | 'trial' | 'cancelled' | 'expired'
   auto_renew?: boolean | null
+  internal_contact?: string | null
+  team?: string | null
   vendors?: { name: string; status: string }
 }
 
@@ -39,6 +42,13 @@ export default function SubscriptionsPage() {
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null)
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loading, setLoading] = useState(true)
+  
+  // Filter states
+  const [filterVendor, setFilterVendor] = useState('')
+  const [filterTeam, setFilterTeam] = useState('')
+  const [filterStatus, setFilterStatus] = useState('')
+  const [filterRenewalDate, setFilterRenewalDate] = useState('')
+  
   const { user } = useAuth()
 
   const fetchSubscriptions = useCallback(async () => {
@@ -46,7 +56,10 @@ export default function SubscriptionsPage() {
     
     try {
       setLoading(true)
-      const subs = await supabaseService.getSubscriptions()
+      const { data: subs, error } = await apiService.getSubscriptions()
+      
+      if (error) throw error
+      
       setSubscriptions(subs as Subscription[])
     } catch (error) {
       console.error('Error fetching subscriptions:', error)
@@ -59,10 +72,40 @@ export default function SubscriptionsPage() {
     fetchSubscriptions()
   }, [fetchSubscriptions])
 
-  const filteredSubscriptions = subscriptions.filter(subscription =>
-    subscription.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    subscription.vendors?.name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredSubscriptions = subscriptions.filter(subscription => {
+    // Search filter
+    const matchesSearch = !searchTerm || 
+      subscription.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      subscription.vendors?.name.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    // Vendor filter
+    const matchesVendor = !filterVendor || filterVendor === 'all' || subscription.vendors?.name === filterVendor
+    
+    // Team filter
+    const matchesTeam = !filterTeam || filterTeam === 'all' || subscription.team === filterTeam
+    
+    // Status filter
+    const matchesStatus = !filterStatus || filterStatus === 'all' || subscription.status === filterStatus
+    
+    // Renewal date filter
+    const matchesRenewalDate = !filterRenewalDate || filterRenewalDate === 'all' || (() => {
+      if (!subscription.next_renewal_date) return false
+      
+      const renewalDate = new Date(subscription.next_renewal_date)
+      const today = new Date()
+      const daysDiff = Math.ceil((renewalDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+      
+      switch (filterRenewalDate) {
+        case '30': return daysDiff <= 30 && daysDiff > 0
+        case '60': return daysDiff <= 60 && daysDiff > 0  
+        case '90': return daysDiff <= 90 && daysDiff > 0
+        case '365': return daysDiff <= 365 && daysDiff > 0
+        default: return true
+      }
+    })()
+    
+    return matchesSearch && matchesVendor && matchesTeam && matchesStatus && matchesRenewalDate
+  })
 
   const handleEditSubscription = (subscription: Subscription) => {
     setSelectedSubscription(subscription)
@@ -123,6 +166,11 @@ export default function SubscriptionsPage() {
   const totalMonthlyCost = filteredSubscriptions.reduce((total, sub) => 
     total + calculateMonthlyCost(sub.cost, sub.billing_cycle), 0
   )
+
+  // Get unique filter options
+  const uniqueVendors = [...new Set(subscriptions.map(s => s.vendors?.name).filter(Boolean))]
+  const uniqueTeams = [...new Set(subscriptions.map(s => s.team).filter(Boolean))]
+  const uniqueStatuses = [...new Set(subscriptions.map(s => s.status))]
 
   return (
     <div className="container mx-auto p-6 space-y-8">
@@ -190,15 +238,91 @@ export default function SubscriptionsPage() {
         </Card>
       </div>
 
-      {/* Search */}
-      <div className="flex items-center space-x-2">
-        <Search className="h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search subscriptions..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm"
-        />
+      {/* Search and Filters */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center space-x-2">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search subscriptions..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-sm"
+          />
+        </div>
+        
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Filters:</span>
+          </div>
+          
+          <Select value={filterVendor || 'all'} onValueChange={(value) => setFilterVendor(value === 'all' ? '' : value)}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="All Vendors" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Vendors</SelectItem>
+              {uniqueVendors.map(vendor => (
+                <SelectItem key={vendor} value={vendor}>{vendor}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterTeam || 'all'} onValueChange={(value) => setFilterTeam(value === 'all' ? '' : value)}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="All Teams" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Teams</SelectItem>
+              {uniqueTeams.map(team => (
+                <SelectItem key={team} value={team}>{team}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterStatus || 'all'} onValueChange={(value) => setFilterStatus(value === 'all' ? '' : value)}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              {uniqueStatuses.map(status => (
+                <SelectItem key={status} value={status}>
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterRenewalDate || 'all'} onValueChange={(value) => setFilterRenewalDate(value === 'all' ? '' : value)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Renewals" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Renewals</SelectItem>
+              <SelectItem value="30">Next 30 days</SelectItem>
+              <SelectItem value="60">Next 60 days</SelectItem>
+              <SelectItem value="90">Next 90 days</SelectItem>
+              <SelectItem value="365">Next 365 days</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {(filterVendor || filterTeam || filterStatus || filterRenewalDate) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setFilterVendor('')
+                setFilterTeam('')
+                setFilterStatus('')
+                setFilterRenewalDate('')
+              }}
+            >
+              <X className="h-4 w-4 mr-2" />
+              Clear Filters
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Subscriptions Table */}
@@ -221,6 +345,7 @@ export default function SubscriptionsPage() {
                   <TableHead>Cost</TableHead>
                   <TableHead>Billing Cycle</TableHead>
                   <TableHead>Next Renewal</TableHead>
+                  <TableHead>Team</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Seats</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
@@ -258,6 +383,13 @@ export default function SubscriptionsPage() {
                         </div>
                       ) : (
                         <span className="text-muted-foreground">No renewal date</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {subscription.team ? (
+                        <Badge variant="secondary">{subscription.team}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
                     <TableCell>

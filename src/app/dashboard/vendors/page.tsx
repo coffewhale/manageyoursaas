@@ -13,7 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { supabase } from '@/lib/supabase'
+import { apiService } from '@/lib/api-service'
 import { useAuth } from '@/contexts/auth-context'
 
 interface Vendor {
@@ -29,16 +29,6 @@ interface Vendor {
   total_cost: number
 }
 
-interface VendorData {
-  id: string
-  name: string
-  website?: string | null
-  contact_email?: string | null
-  contact_phone?: string | null
-  status: 'active' | 'inactive' | 'trial'
-  description?: string | null
-  categories?: { name: string } | null
-}
 
 export default function VendorsPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -53,63 +43,11 @@ export default function VendorsPage() {
     
     try {
       setLoading(true)
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('id', user.id)
-        .single()
-        
-      if (profileError || !(profile as { organization_id: string })?.organization_id) return
+      const { data: vendorsData, error } = await apiService.getVendors()
       
-      const { data: vendorsData, error } = await supabase
-        .from('vendors')
-        .select(`
-          id,
-          name,
-          website,
-          contact_email,
-          contact_phone,
-          status,
-          description,
-          categories(name)
-        `)
-        .eq('organization_id', (profile as { organization_id: string }).organization_id)
-        
       if (error) throw error
       
-      // Get subscription counts and costs
-      const vendorsWithCounts = await Promise.all(
-        (vendorsData || []).map(async (vendor: VendorData) => {
-          const { data: subscriptions } = await supabase
-            .from('subscriptions')
-            .select('cost, billing_cycle')
-            .eq('vendor_id', vendor.id)
-            .eq('status', 'active')
-            
-          const subscriptions_count = subscriptions?.length || 0
-          const total_cost = subscriptions?.reduce((total, sub: { cost: number; billing_cycle: string }) => {
-            const monthlyCost = sub.billing_cycle === 'yearly' ? sub.cost / 12 :
-                               sub.billing_cycle === 'quarterly' ? sub.cost / 3 :
-                               sub.cost
-            return total + monthlyCost
-          }, 0) || 0
-          
-          return {
-            id: vendor.id,
-            name: vendor.name,
-            website: vendor.website || undefined,
-            contact_email: vendor.contact_email || undefined,
-            contact_phone: vendor.contact_phone || undefined,
-            category: vendor.categories?.name || 'Uncategorized',
-            status: vendor.status,
-            description: vendor.description || undefined,
-            subscriptions_count,
-            total_cost: Math.round(total_cost * 100) / 100
-          }
-        })
-      )
-      
-      setVendors(vendorsWithCounts)
+      setVendors(vendorsData || [])
     } catch (error) {
       console.error('Error fetching vendors:', error)
     } finally {
@@ -122,10 +60,15 @@ export default function VendorsPage() {
     fetchVendors()
   }, [fetchVendors])
   
-  // Set up real-time subscription
+  // Set up real-time subscription (only for production mode)
   useEffect(() => {
     if (!user) return
     
+    // Skip real-time subscriptions in mock mode
+    const isMock = process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://placeholder.supabase.co'
+    if (isMock) return
+    
+    const { supabase } = await import('@/lib/supabase')
     const channel = supabase
       .channel('vendors-changes')
       .on(
@@ -178,11 +121,8 @@ export default function VendorsPage() {
   const handleDeleteVendor = async (vendor: Vendor) => {
     if (confirm(`Are you sure you want to delete ${vendor.name}?`)) {
       try {
-        const { error } = await supabase
-          .from('vendors')
-          .delete()
-          .eq('id', vendor.id)
-          
+        const { error } = await apiService.deleteVendor(vendor.id)
+        
         if (error) throw error
         
         // Refresh vendors list
