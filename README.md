@@ -209,3 +209,4 @@ The app can be deployed to any platform that supports Next.js applications:
 
 This project is licensed under the MIT License.
 # Deploy trigger
+# Force Vercel deployment from latest commit
