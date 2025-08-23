@@ -220,7 +220,6 @@ export const supabaseService = {
     if (!orgId) throw new Error('User has no organization')
 
     // Create file path: org-id/vendor-contracts/filename
-    const fileExt = file.name.split('.').pop()
     const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
     const filePath = `${orgId}/vendor-contracts/${fileName}`
 
@@ -240,7 +239,7 @@ export const supabaseService = {
         file_path: filePath,
         file_size: file.size,
         mime_type: file.type,
-        type: type as any,
+        type: type as Database['public']['Enums']['document_type'],
         vendor_id: vendorId,
         uploaded_by: user.id
       })
@@ -305,7 +304,7 @@ export const supabaseService = {
   },
 
   // Activity logs
-  async logActivity(action: string, resourceType: string, resourceId?: string, details?: any) {
+  async logActivity(action: string, resourceType: string, resourceId?: string, details?: Record<string, unknown>) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return // Don't throw error, just skip logging
 

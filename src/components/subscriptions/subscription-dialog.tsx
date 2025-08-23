@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Switch } from '@/components/ui/switch'
+import { supabaseService, supabase } from '@/lib/supabase-client'
+import { useAuth } from '@/contexts/auth-context'
 
 interface Subscription {
   id?: string
@@ -19,30 +21,29 @@ interface Subscription {
   billing_cycle: 'monthly' | 'quarterly' | 'yearly'
   currency: string
   start_date: string
-  next_renewal_date: string
-  status: 'active' | 'cancelled' | 'expired' | 'trial'
-  user_seats?: number
-  auto_renew: boolean
+  next_renewal_date?: string | null
+  status: 'active' | 'inactive' | 'trial' | 'cancelled' | 'expired'
+  user_seats?: number | null
+  auto_renew?: boolean | null
+}
+
+interface Vendor {
+  id: string
+  name: string
+  status: string
 }
 
 interface SubscriptionDialogProps {
   isOpen: boolean
   onClose: () => void
   subscription?: Subscription | null
+  onSubscriptionUpdated?: () => void
 }
 
-// Mock vendors - in real app, fetch from Supabase
-const mockVendors = [
-  { id: '1', name: 'Slack Technologies' },
-  { id: '2', name: 'GitHub' },
-  { id: '3', name: 'Notion Labs' },
-  { id: '4', name: 'Adobe' },
-  { id: '5', name: 'Microsoft' },
-  { id: '6', name: 'Google' },
-]
-
-export function SubscriptionDialog({ isOpen, onClose, subscription }: SubscriptionDialogProps) {
-  const [formData, setFormData] = useState<Subscription>({
+export function SubscriptionDialog({ isOpen, onClose, subscription, onSubscriptionUpdated }: SubscriptionDialogProps) {
+  const { user } = useAuth()
+  const [vendors, setVendors] = useState<Vendor[]>([])
+  const [formData, setFormData] = useState<Subscription & { next_renewal_date: string; auto_renew: boolean }>({
     name: '',
     vendor_id: '',
     description: '',
@@ -56,9 +57,35 @@ export function SubscriptionDialog({ isOpen, onClose, subscription }: Subscripti
     auto_renew: true,
   })
   const [loading, setLoading] = useState(false)
+  const [vendorsLoading, setVendorsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const isEditing = !!subscription
+
+  // Fetch vendors on component mount
+  useEffect(() => {
+    const fetchVendors = async () => {
+      if (!user) return
+      
+      try {
+        setVendorsLoading(true)
+        const { data: vendorsData, error } = await supabase
+          .from('vendors')
+          .select('id, name, status')
+          .eq('status', 'active')
+          .order('name')
+        
+        if (error) throw error
+        setVendors(vendorsData || [])
+      } catch (error) {
+        console.error('Error fetching vendors:', error)
+      } finally {
+        setVendorsLoading(false)
+      }
+    }
+    
+    fetchVendors()
+  }, [user])
 
   useEffect(() => {
     if (subscription) {
@@ -70,10 +97,10 @@ export function SubscriptionDialog({ isOpen, onClose, subscription }: Subscripti
         billing_cycle: subscription.billing_cycle,
         currency: subscription.currency,
         start_date: subscription.start_date,
-        next_renewal_date: subscription.next_renewal_date,
+        next_renewal_date: subscription.next_renewal_date || '',
         status: subscription.status,
         user_seats: subscription.user_seats || 1,
-        auto_renew: subscription.auto_renew,
+        auto_renew: subscription.auto_renew ?? true,
       })
     } else {
       const today = new Date().toISOString().split('T')[0]
@@ -104,18 +131,37 @@ export function SubscriptionDialog({ isOpen, onClose, subscription }: Subscripti
     setError(null)
 
     try {
-      // TODO: Replace with actual Supabase API calls
       if (isEditing) {
-        console.log('Updating subscription:', { ...formData, id: subscription.id })
-        // await updateSubscription(subscription.id, formData)
+        await supabaseService.updateSubscription(subscription.id!, {
+          name: formData.name,
+          vendor_id: formData.vendor_id,
+          description: formData.description || null,
+          cost: formData.cost,
+          billing_cycle: formData.billing_cycle,
+          currency: formData.currency,
+          start_date: formData.start_date,
+          next_renewal_date: formData.next_renewal_date,
+          status: formData.status,
+          user_seats: formData.user_seats || null,
+          auto_renew: formData.auto_renew
+        })
       } else {
-        console.log('Creating subscription:', formData)
-        // await createSubscription(formData)
+        await supabaseService.createSubscription({
+          name: formData.name,
+          vendor_id: formData.vendor_id,
+          description: formData.description || null,
+          cost: formData.cost,
+          billing_cycle: formData.billing_cycle,
+          currency: formData.currency,
+          start_date: formData.start_date,
+          next_renewal_date: formData.next_renewal_date,
+          status: formData.status,
+          user_seats: formData.user_seats || null,
+          auto_renew: formData.auto_renew
+        })
       }
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
+      onSubscriptionUpdated?.()
       onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -201,11 +247,15 @@ export function SubscriptionDialog({ isOpen, onClose, subscription }: Subscripti
                   <SelectValue placeholder="Select a vendor" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockVendors.map((vendor) => (
-                    <SelectItem key={vendor.id} value={vendor.id}>
-                      {vendor.name}
-                    </SelectItem>
-                  ))}
+                  {vendorsLoading ? (
+                    <SelectItem value="loading" disabled>Loading vendors...</SelectItem>
+                  ) : (
+                    vendors.map((vendor) => (
+                      <SelectItem key={vendor.id} value={vendor.id}>
+                        {vendor.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -295,7 +345,7 @@ export function SubscriptionDialog({ isOpen, onClose, subscription }: Subscripti
                 id="user_seats"
                 type="number"
                 min="1"
-                value={formData.user_seats}
+                value={formData.user_seats || ''}
                 onChange={(e) => handleChange('user_seats', parseInt(e.target.value) || 1)}
               />
             </div>
@@ -310,6 +360,7 @@ export function SubscriptionDialog({ isOpen, onClose, subscription }: Subscripti
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
                   <SelectItem value="trial">Trial</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                   <SelectItem value="expired">Expired</SelectItem>

@@ -173,7 +173,7 @@ export interface Database {
           currency: string
           start_date: string
           next_renewal_date: string
-          status: 'active' | 'cancelled' | 'expired'
+          status: 'active' | 'inactive' | 'trial' | 'cancelled' | 'expired'
           user_seats: number | null
           contract_url: string | null
           auto_renew: boolean
@@ -191,7 +191,7 @@ export interface Database {
           currency?: string
           start_date: string
           next_renewal_date: string
-          status?: 'active' | 'cancelled' | 'expired'
+          status?: 'active' | 'inactive' | 'trial' | 'cancelled' | 'expired'
           user_seats?: number | null
           contract_url?: string | null
           auto_renew?: boolean
@@ -209,7 +209,7 @@ export interface Database {
           currency?: string
           start_date?: string
           next_renewal_date?: string
-          status?: 'active' | 'cancelled' | 'expired'
+          status?: 'active' | 'inactive' | 'trial' | 'cancelled' | 'expired'
           user_seats?: number | null
           contract_url?: string | null
           auto_renew?: boolean
@@ -350,10 +350,45 @@ export interface Database {
       }
     }
     Views: {
-      [_ in never]: never
+      vendor_summary: {
+        Row: {
+          id: string
+          name: string
+          status: string
+          subscriptions_count: number
+          total_cost: number
+        }
+      }
+      upcoming_renewals: {
+        Row: {
+          id: string
+          name: string
+          vendor_name: string
+          cost: number
+          next_renewal_date: string
+          days_until_renewal: number
+        }
+      }
     }
     Functions: {
-      [_ in never]: never
+      initialize_user_organization: {
+        Args: {
+          org_name: string
+          user_full_name?: string
+        }
+        Returns: string
+      }
+      get_organization_spending: {
+        Args: {
+          org_id: string
+        }
+        Returns: {
+          total_monthly_cost: number
+          total_yearly_cost: number
+          active_subscriptions: number
+          total_vendors: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

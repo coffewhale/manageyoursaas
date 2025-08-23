@@ -111,7 +111,7 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
         .eq('id', user.id)
         .single()
         
-      if (!profile?.organization_id) throw new Error('No organization found')
+      if (!(profile as unknown as { organization_id: string })?.organization_id) throw new Error('No organization found')
       
       // Find category ID
       const category = categories.find(c => c.name === formData.category)
@@ -124,20 +124,20 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
         status: formData.status,
         category_id: category?.id || null,
         description: formData.description || null,
-        organization_id: profile.organization_id
+        organization_id: (profile as unknown as { organization_id: string }).organization_id
       }
 
       if (isEditing && vendor?.id) {
         const { error } = await supabase
           .from('vendors')
-          .update(vendorData)
+          .update(vendorData as any)
           .eq('id', vendor.id)
           
         if (error) throw error
       } else {
         const { error } = await supabase
           .from('vendors')
-          .insert([vendorData])
+          .insert([vendorData as any])
           
         if (error) throw error
       }
