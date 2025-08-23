@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { apiService } from '@/lib/api-service'
 import { useAuth } from '@/contexts/auth-context'
+import { supabase } from '@/lib/supabase'
 
 interface Vendor {
   id: string
@@ -68,7 +69,6 @@ export default function VendorsPage() {
     const isMock = process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://placeholder.supabase.co'
     if (isMock) return
     
-    const { supabase } = await import('@/lib/supabase')
     const channel = supabase
       .channel('vendors-changes')
       .on(
