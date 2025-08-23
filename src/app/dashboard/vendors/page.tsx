@@ -13,7 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { supabase } from '@/lib/supabase'
+import { supabaseService, supabase } from '@/lib/supabase-client'
 import { useAuth } from '@/contexts/auth-context'
 
 interface Vendor {
@@ -42,63 +42,8 @@ export default function VendorsPage() {
     
     try {
       setLoading(true)
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('id', user.id)
-        .single()
-        
-      if (!profile?.organization_id) return
-      
-      const { data: vendorsData, error } = await supabase
-        .from('vendors')
-        .select(`
-          id,
-          name,
-          website,
-          contact_email,
-          contact_phone,
-          status,
-          description,
-          categories(name)
-        `)
-        .eq('organization_id', profile.organization_id)
-        
-      if (error) throw error
-      
-      // Get subscription counts and costs
-      const vendorsWithCounts = await Promise.all(
-        (vendorsData || []).map(async (vendor) => {
-          const { data: subscriptions } = await supabase
-            .from('subscriptions')
-            .select('cost, billing_cycle')
-            .eq('vendor_id', vendor.id)
-            .eq('status', 'active')
-            
-          const subscriptions_count = subscriptions?.length || 0
-          const total_cost = subscriptions?.reduce((total, sub) => {
-            const monthlyCost = sub.billing_cycle === 'yearly' ? sub.cost / 12 :
-                               sub.billing_cycle === 'quarterly' ? sub.cost / 3 :
-                               sub.cost
-            return total + monthlyCost
-          }, 0) || 0
-          
-          return {
-            id: vendor.id,
-            name: vendor.name,
-            website: vendor.website || undefined,
-            contact_email: vendor.contact_email || undefined,
-            contact_phone: vendor.contact_phone || undefined,
-            category: vendor.categories?.name || 'Uncategorized',
-            status: vendor.status,
-            description: vendor.description || undefined,
-            subscriptions_count,
-            total_cost: Math.round(total_cost * 100) / 100
-          }
-        })
-      )
-      
-      setVendors(vendorsWithCounts)
+      const vendors = await supabaseService.getVendors()
+      setVendors(vendors)
     } catch (error) {
       console.error('Error fetching vendors:', error)
     } finally {

@@ -2,16 +2,19 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session, AuthError } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import { supabase, supabaseService } from '@/lib/supabase-client'
 
 interface AuthContextType {
   user: User | null
   session: Session | null
+  profile: any | null
+  organization: any | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>
+  initializeOrganization: (orgName: string, userFullName?: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -19,13 +22,21 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
+  const [profile, setProfile] = useState<any | null>(null)
+  const [organization, setOrganization] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
+      
+      // Load profile if user is authenticated
+      if (session?.user) {
+        await loadUserProfile(session.user.id)
+      }
+      
       setLoading(false)
     })
 
@@ -37,68 +48,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null)
       setLoading(false)
 
-      // Create or update profile when user signs in
+      // Load profile and organization when user signs in
       if (event === 'SIGNED_IN' && session?.user) {
-        await createOrUpdateProfile(session.user)
+        await loadUserProfile(session.user.id)
+      } else if (event === 'SIGNED_OUT') {
+        setProfile(null)
+        setOrganization(null)
       }
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
-  const createOrUpdateProfile = async (user: User) => {
+  const loadUserProfile = async (userId: string) => {
     try {
-      // Check if profile already exists
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id, organization_id')
-        .eq('id', user.id)
-        .single()
-
-      let organizationId = existingProfile?.organization_id
-
-      // If user doesn't have an organization, create one
-      if (!organizationId) {
-        const orgName = user.user_metadata?.full_name 
-          ? `${user.user_metadata.full_name}'s Organization`
-          : `${user.email?.split('@')[0]}'s Organization`
-
-        const { data: orgData, error: orgError } = await supabase
-          .from('organizations')
-          .insert({
-            name: orgName,
-            description: 'Personal organization'
-          })
-          .select()
-          .single()
-
-        if (orgError) {
-          console.error('Error creating organization:', orgError)
-          return
-        }
-
-        organizationId = orgData.id
-      }
-
-      // Create or update profile
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
-          email: user.email!,
-          full_name: user.user_metadata?.full_name || null,
-          avatar_url: user.user_metadata?.avatar_url || null,
-          organization_id: organizationId,
-          role: existingProfile ? undefined : 'admin', // New users are admins of their org
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-
-      if (error) {
-        console.error('Error creating/updating profile:', error)
-      }
+      const userOrg = await supabaseService.getUserOrganization(userId)
+      setProfile(userOrg.profile)
+      setOrganization(userOrg.organization)
     } catch (error) {
-      console.error('Error in createOrUpdateProfile:', error)
+      console.error('Error loading user profile:', error)
+    }
+  }
+
+  const initializeOrganization = async (orgName: string, userFullName?: string) => {
+    try {
+      if (!user) throw new Error('No user authenticated')
+      
+      await supabaseService.initializeUserOrganization(orgName, userFullName)
+      await loadUserProfile(user.id)
+    } catch (error) {
+      console.error('Error initializing organization:', error)
+      throw error
     }
   }
 
@@ -138,11 +118,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = {
     user,
     session,
+    profile,
+    organization,
     loading,
     signIn,
     signUp,
     signOut,
     resetPassword,
+    initializeOrganization,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
