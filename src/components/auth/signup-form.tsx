@@ -16,6 +16,7 @@ export function SignupForm({ onToggleMode }: SignupFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
+  const [organizationName, setOrganizationName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -26,7 +27,7 @@ export function SignupForm({ onToggleMode }: SignupFormProps) {
     setLoading(true)
     setError(null)
 
-    const { error } = await signUp(email, password, fullName)
+    const { error } = await signUp(email, password, fullName, organizationName)
     if (error) {
       setError(error.message)
     } else {
@@ -87,6 +88,17 @@ export function SignupForm({ onToggleMode }: SignupFormProps) {
               placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="organizationName">Organization Name</Label>
+            <Input
+              id="organizationName"
+              type="text"
+              placeholder="e.g., Acme Corp, My Startup"
+              value={organizationName}
+              onChange={(e) => setOrganizationName(e.target.value)}
               required
             />
           </div>

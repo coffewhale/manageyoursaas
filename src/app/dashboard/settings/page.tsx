@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -9,20 +9,24 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useAuth } from '@/contexts/auth-context'
+import { supabase } from '@/lib/supabase-client'
 import { Settings, User, Bell, Globe, Shield, CreditCard } from 'lucide-react'
 
 export default function SettingsPage() {
-  const { user } = useAuth()
+  const { user, profile, organization } = useAuth()
   const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   
   // Organization settings
-  const [orgName, setOrgName] = useState('Acme Corporation')
-  const [orgDescription, setOrgDescription] = useState('A leading technology company')
+  const [orgName, setOrgName] = useState('')
+  const [orgDescription, setOrgDescription] = useState('')
   
   // User profile settings
-  const [fullName, setFullName] = useState(user?.user_metadata?.full_name || '')
-  const [email, setEmail] = useState(user?.email || '')
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
   
   // Notification settings
   const [emailNotifications, setEmailNotifications] = useState(true)
@@ -34,20 +38,77 @@ export default function SettingsPage() {
   const [timezone, setTimezone] = useState('America/New_York')
   const [dateFormat, setDateFormat] = useState('MM/DD/YYYY')
 
+  // Load current data
+  useEffect(() => {
+    if (user) {
+      setEmail(user.email || '')
+      setFullName(user.user_metadata?.full_name || profile?.full_name || '')
+    }
+    if (organization) {
+      setOrgName(organization.name || '')
+      setOrgDescription(organization.description || '')
+    }
+  }, [user, profile, organization])
+
+  // Clear messages after 5 seconds
+  useEffect(() => {
+    if (success || error) {
+      const timer = setTimeout(() => {
+        setSuccess(null)
+        setError(null)
+      }, 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [success, error])
+
   const handleSaveProfile = async () => {
     setLoading(true)
-    // TODO: Implement profile update
-    console.log('Saving profile:', { fullName, email })
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setLoading(false)
+    setError(null)
+    setSuccess(null)
+    
+    try {
+      const { error } = await supabase.rpc('update_user_profile', {
+        new_full_name: fullName.trim()
+      })
+      
+      if (error) throw error
+      
+      setSuccess('Profile updated successfully!')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update profile')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSaveOrganization = async () => {
     setLoading(true)
-    // TODO: Implement organization update
-    console.log('Saving organization:', { orgName, orgDescription })
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setLoading(false)
+    setError(null)
+    setSuccess(null)
+    
+    try {
+      const { error } = await supabase.rpc('update_organization_name', {
+        new_name: orgName.trim()
+      })
+      
+      if (error) throw error
+      
+      // Also update description if needed (we need to add this to the database function)
+      if (orgDescription !== organization?.description) {
+        const { error: descError } = await supabase
+          .from('organizations')
+          .update({ description: orgDescription.trim() })
+          .eq('id', organization?.id)
+        
+        if (descError) throw descError
+      }
+      
+      setSuccess('Organization updated successfully!')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update organization')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSaveNotifications = async () => {
@@ -128,6 +189,17 @@ export default function SettingsPage() {
 
         {/* Settings Content */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Success/Error Messages */}
+          {success && (
+            <Alert>
+              <AlertDescription>{success}</AlertDescription>
+            </Alert>
+          )}
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
           {/* Profile Settings */}
           <Card id="profile">
             <CardHeader>

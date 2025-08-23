@@ -67,7 +67,7 @@ export default function ConfirmPage() {
   }, [searchParams])
 
   const handleContinue = () => {
-    router.push('/dashboard')
+    router.push('/onboarding')
   }
 
   const handleBackToAuth = () => {
@@ -112,7 +112,7 @@ export default function ConfirmPage() {
           
           {status === 'success' && (
             <Button onClick={handleContinue} className="w-full">
-              Continue to Dashboard
+              Continue to Setup
             </Button>
           )}
           

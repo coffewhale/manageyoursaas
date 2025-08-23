@@ -11,7 +11,7 @@ interface AuthContextType {
   organization: Organization | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
-  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: AuthError | null }>
+  signUp: (email: string, password: string, fullName?: string, organizationName?: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>
   resendConfirmation: (email: string) => Promise<{ error: AuthError | null }>
@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error }
   }
 
-  const signUp = async (email: string, password: string, fullName?: string) => {
+  const signUp = async (email: string, password: string, fullName?: string, organizationName?: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -99,6 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         emailRedirectTo: `${window.location.origin}/auth/confirm`,
         data: {
           full_name: fullName,
+          organization_name: organizationName,
         },
       },
     })
