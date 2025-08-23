@@ -1,4 +1,5 @@
 // Mock authentication for local development when Supabase isn't configured
+// Updated to fix ESLint errors
 export const mockAuth = {
   async signUp(email: string, password: string, fullName?: string) {
     // Simulate API delay
