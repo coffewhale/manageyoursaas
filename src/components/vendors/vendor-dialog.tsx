@@ -111,7 +111,33 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
         .eq('id', user.id)
         .single()
         
-      if (!(profile as unknown as { organization_id: string })?.organization_id) throw new Error('No organization found')
+      // If user doesn't have an organization, create one automatically
+      if (!(profile as unknown as { organization_id: string })?.organization_id) {
+        try {
+          const { data, error } = await supabase.rpc('initialize_user_organization', {
+            org_name: 'My Organization',
+            user_full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
+          })
+          
+          if (error) throw error
+          
+          // Refresh profile data
+          const { data: updatedProfile } = await supabase
+            .from('profiles')
+            .select('organization_id')
+            .eq('id', user.id)
+            .single()
+            
+          if (!(updatedProfile as unknown as { organization_id: string })?.organization_id) {
+            throw new Error('Failed to create organization')
+          }
+          
+          // Use the updated profile
+          profile.organization_id = updatedProfile.organization_id
+        } catch (initError) {
+          throw new Error(`Failed to initialize organization: ${initError.message}`)
+        }
+      }
       
       // Find category ID
       const category = categories.find(c => c.name === formData.category)
