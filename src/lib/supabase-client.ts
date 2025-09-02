@@ -130,14 +130,9 @@ export const supabaseService = {
   async createVendor(vendor: Omit<VendorInsert, 'id' | 'organization_id' | 'created_at' | 'updated_at'>) {
     console.log('🏢 VENDOR DEBUG: createVendor function started')
     
-    // Get user's ID - restore auth check now that organization exists
-    console.log('🏢 VENDOR DEBUG: Getting user...')
-    const { data: { user } } = await supabase.auth.getUser()
-    console.log('🏢 VENDOR DEBUG: User retrieved:', user?.id || 'NO USER')
-    
-    if (!user) throw new Error('User not authenticated')
-    
-    const orgId = user.id // Use user ID as organization ID
+    // TEMP: Hardcode your user ID to bypass hanging auth
+    console.log('🏢 VENDOR DEBUG: Using hardcoded user ID...')
+    const orgId = 'e652c0b9-baad-4a5e-b36f-016419cfc7ed' // Your actual user/org ID
 
     const vendorData = {
       ...vendor,
