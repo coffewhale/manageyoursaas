@@ -105,9 +105,20 @@ export const supabaseService = {
   },
 
   async createVendor(vendor: Omit<VendorInsert, 'id' | 'organization_id' | 'created_at' | 'updated_at'>) {
+    // Get user's organization ID
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const userOrg = await this.getUserOrganization(user.id)
+    const orgId = userOrg.organization?.id
+    if (!orgId) throw new Error('User has no organization')
+
     const { data, error } = await supabase
       .from('vendors')
-      .insert(vendor)
+      .insert({
+        ...vendor,
+        organization_id: orgId
+      })
       .select()
       .single()
 
