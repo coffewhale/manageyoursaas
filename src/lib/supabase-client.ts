@@ -51,13 +51,44 @@ export const supabaseService = {
 
   // Vendor operations
   async getVendors() {
+    // Query vendors directly with subscription counts and total costs calculated
     const { data, error } = await supabase
-      .from('vendor_summary')
-      .select('*')
+      .from('vendors')
+      .select(`
+        id,
+        name,
+        website,
+        contact_email,
+        contact_phone,
+        status,
+        category_id,
+        description,
+        logo_url,
+        organization_id,
+        created_at,
+        updated_at,
+        categories (name),
+        subscriptions (
+          id,
+          cost,
+          status
+        )
+      `)
       .order('name')
 
     if (error) throw error
-    return data || []
+    
+    // Calculate subscription counts and total costs client-side
+    const vendorsWithStats = (data || []).map(vendor => ({
+      ...vendor,
+      category: vendor.categories?.name || 'Uncategorized',
+      subscriptions_count: vendor.subscriptions?.length || 0,
+      total_cost: vendor.subscriptions?.reduce((sum: number, sub: any) => {
+        return sub.status === 'active' ? sum + (sub.cost || 0) : sum
+      }, 0) || 0
+    }))
+    
+    return vendorsWithStats
   },
 
   async getVendor(id: string) {
