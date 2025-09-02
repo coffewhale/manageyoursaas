@@ -130,13 +130,18 @@ export const supabaseService = {
   async createVendor(vendor: Omit<VendorInsert, 'id' | 'organization_id' | 'created_at' | 'updated_at'>) {
     console.log('🏢 VENDOR DEBUG: createVendor function started')
     
-    // TEMPORARY: Skip auth check and use random UUID as org ID
-    console.log('🏢 VENDOR DEBUG: Skipping auth check for testing...')
-    const tempOrgId = crypto.randomUUID()
+    // Get user's ID - restore auth check now that organization exists
+    console.log('🏢 VENDOR DEBUG: Getting user...')
+    const { data: { user } } = await supabase.auth.getUser()
+    console.log('🏢 VENDOR DEBUG: User retrieved:', user?.id || 'NO USER')
+    
+    if (!user) throw new Error('User not authenticated')
+    
+    const orgId = user.id // Use user ID as organization ID
 
     const vendorData = {
       ...vendor,
-      organization_id: tempOrgId // Use temp org ID to bypass auth issues
+      organization_id: orgId // Use user's organization ID
     }
     
     console.log('🏢 VENDOR DEBUG: About to insert vendor with data:', vendorData)
