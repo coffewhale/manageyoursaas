@@ -26,17 +26,34 @@ export type Renewal = Database['public']['Tables']['renewals']['Row']
 export const supabaseService = {
   // Organization operations
   async getUserOrganization(userId: string) {
-    const { data: profile, error } = await supabase
+    // First get the user's profile with just the organization_id
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select(`
-        *,
-        organizations (*)
-      `)
+      .select('*, organization_id')
       .eq('id', userId)
       .single()
 
-    if (error) throw error
-    return { profile, organization: profile.organizations }
+    if (profileError) throw profileError
+
+    // If no organization_id, return profile with null organization
+    if (!profile.organization_id) {
+      return { profile, organization: null }
+    }
+
+    // Get the organization separately
+    const { data: organization, error: orgError } = await supabase
+      .from('organizations')
+      .select('*')
+      .eq('id', profile.organization_id)
+      .single()
+
+    if (orgError) {
+      // If organization query fails, still return profile but with null organization
+      console.warn('Failed to fetch organization:', orgError)
+      return { profile, organization: null }
+    }
+
+    return { profile, organization }
   },
 
   async initializeUserOrganization(orgName: string, userFullName?: string) {
@@ -105,21 +122,33 @@ export const supabaseService = {
   },
 
   async createVendor(vendor: Omit<VendorInsert, 'id' | 'organization_id' | 'created_at' | 'updated_at'>) {
-    // Get user's ID and use it as organization_id for now (simplified approach)
+    // Get user's organization ID
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
-    const { data, error } = await supabase
-      .from('vendors')
-      .insert({
-        ...vendor,
-        organization_id: user.id // Use user ID as org ID for now to avoid complex organization lookup
-      })
-      .select()
-      .single()
+    try {
+      const userOrg = await this.getUserOrganization(user.id)
+      const orgId = userOrg.organization?.id || userOrg.profile.organization_id
+      
+      if (!orgId) {
+        throw new Error('User has no organization. Please complete organization setup.')
+      }
 
-    if (error) throw error
-    return data
+      const { data, error } = await supabase
+        .from('vendors')
+        .insert({
+          ...vendor,
+          organization_id: orgId
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    } catch (error) {
+      console.error('Error creating vendor:', error)
+      throw error
+    }
   },
 
   async updateVendor(id: string, updates: VendorUpdate) {
