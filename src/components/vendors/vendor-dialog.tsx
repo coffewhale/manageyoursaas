@@ -102,14 +102,15 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
     try {
       if (!user) throw new Error('User not authenticated')
       
+      // Simplify to absolute minimum required fields only
       const vendorData = {
-        name: formData.name,
-        website: formData.website || null,
-        contact_email: formData.contact_email || null,
-        contact_phone: formData.contact_phone || null,
-        status: formData.status,
-        category_id: null, // Set to null for now since we don't have categories table
-        description: formData.description || null,
+        name: formData.name.trim(),
+        status: formData.status as 'active' | 'inactive' | 'trial',
+        // Optional fields - only include if they have actual values
+        ...(formData.website && formData.website.trim() && { website: formData.website.trim() }),
+        ...(formData.contact_email && formData.contact_email.trim() && { contact_email: formData.contact_email.trim() }),
+        ...(formData.contact_phone && formData.contact_phone.trim() && { contact_phone: formData.contact_phone.trim() }),
+        ...(formData.description && formData.description.trim() && { description: formData.description.trim() }),
       }
 
       if (process.env.NODE_ENV === 'development') {

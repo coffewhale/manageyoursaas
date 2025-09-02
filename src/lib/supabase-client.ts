@@ -128,8 +128,13 @@ export const supabaseService = {
   },
 
   async createVendor(vendor: Omit<VendorInsert, 'id' | 'organization_id' | 'created_at' | 'updated_at'>) {
+    console.log('🏢 VENDOR DEBUG: createVendor function started')
+    
     // Get user's ID and use it as organization_id temporarily to avoid RLS recursion
+    console.log('🏢 VENDOR DEBUG: Getting user...')
     const { data: { user } } = await supabase.auth.getUser()
+    console.log('🏢 VENDOR DEBUG: User retrieved:', user?.id || 'NO USER')
+    
     if (!user) throw new Error('User not authenticated')
 
     const vendorData = {
@@ -137,28 +142,41 @@ export const supabaseService = {
       organization_id: user.id // Use user ID as organization ID to bypass RLS issues
     }
     
-    console.log('🏢 VENDOR DEBUG: Creating vendor with data:', vendorData)
-    console.log('🏢 VENDOR DEBUG: User ID:', user.id)
+    console.log('🏢 VENDOR DEBUG: About to insert vendor with data:', vendorData)
 
-    const { data, error } = await supabase
+    // Add timeout to catch hanging requests
+    const insertPromise = supabase
       .from('vendors')
       .insert(vendorData)
       .select()
       .single()
 
-    console.log('🏢 VENDOR DEBUG: Insert result:', { data, error })
+    console.log('🏢 VENDOR DEBUG: Insert promise created, waiting for result...')
     
-    if (error) {
-      console.error('🏢 VENDOR DEBUG: Insert error details:', {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint
-      })
+    // 10 second timeout
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Vendor creation timed out after 10 seconds')), 10000)
+    )
+
+    try {
+      const { data, error } = await Promise.race([insertPromise, timeoutPromise]) as any
+      console.log('🏢 VENDOR DEBUG: Insert completed with result:', { data, error })
+      
+      if (error) {
+        console.error('🏢 VENDOR DEBUG: Insert error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        })
+        throw error
+      }
+      
+      return data
+    } catch (error) {
+      console.error('🏢 VENDOR DEBUG: Insert failed or timed out:', error)
       throw error
     }
-    
-    return data
   },
 
   async updateVendor(id: string, updates: VendorUpdate) {
