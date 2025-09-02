@@ -55,13 +55,18 @@ export function Sidebar() {
   const { signOut, user } = useAuth()
 
   const handleSignOut = async () => {
+    console.log('🚪 SIGNOUT DEBUG: Button clicked')
     try {
+      console.log('🚪 SIGNOUT DEBUG: Calling signOut function')
       const { error } = await signOut()
+      console.log('🚪 SIGNOUT DEBUG: SignOut result:', { error })
+      
       if (error) {
         console.error('Error signing out:', error)
         return
       }
-      // Redirect to home page after successful signout
+      
+      console.log('🚪 SIGNOUT DEBUG: Redirecting to home page')
       router.push('/')
     } catch (error) {
       console.error('Error during signout:', error)

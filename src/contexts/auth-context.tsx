@@ -250,7 +250,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
+    console.log('🚪 AUTH DEBUG: signOut function called, isMockMode:', isMockMode())
+    
     if (isMockMode()) {
+      console.log('🚪 AUTH DEBUG: Mock mode - clearing localStorage')
       // Clear mock session
       if (typeof window !== 'undefined') {
         localStorage.removeItem('mock-session')
@@ -259,10 +262,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(null)
       setProfile(null)
       setOrganization(null)
+      console.log('🚪 AUTH DEBUG: Mock signout complete')
       return { error: null }
     }
 
+    console.log('🚪 AUTH DEBUG: Production mode - calling supabase signOut')
     const { error } = await supabase.auth.signOut()
+    console.log('🚪 AUTH DEBUG: Supabase signOut result:', { error })
     return { error }
   }
 
