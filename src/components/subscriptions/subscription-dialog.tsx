@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Switch } from '@/components/ui/switch'
 import { apiService } from '@/lib/api-service'
 import { useAuth } from '@/contexts/auth-context'
+import { validateSubscription, getNextRenewalDate } from '@/types/subscription'
 
 // Predefined teams
 const PREDEFINED_TEAMS = [
@@ -166,6 +167,13 @@ export function SubscriptionDialog({ isOpen, onClose, subscription, onSubscripti
         auto_renew: formData.auto_renew,
         internal_contact: formData.internal_contact || null,
         team: formData.team || null
+      }
+
+      // Validate subscription data
+      const validationErrors = validateSubscription(subscriptionData)
+      if (validationErrors.length > 0) {
+        setError(validationErrors.join(', '))
+        return
       }
 
       if (isEditing) {

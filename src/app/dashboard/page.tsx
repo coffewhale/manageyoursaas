@@ -8,6 +8,8 @@ import { Plus, DollarSign, Calendar, Building2, CreditCard, Zap, Users, FileText
 import Link from 'next/link'
 import { useAuth } from '@/contexts/auth-context'
 import { apiService } from '@/lib/api-service'
+import { subscriptionService } from '@/lib/subscription-service'
+import { RenewalAlerts } from '@/components/subscriptions/renewal-alerts'
 
 interface DashboardStats {
   totalMonthlyCost: number
@@ -39,21 +41,20 @@ export default function DashboardPage() {
     
     try {
       setLoading(true)
-      const { data: vendorsData, error } = await apiService.getVendors()
+      const [{ data: vendorsData, error: vendorError }, subscriptionStats] = await Promise.all([
+        apiService.getVendors(),
+        subscriptionService.getSubscriptionStats()
+      ])
       
-      if (error) throw error
+      if (vendorError) throw vendorError
       
       setVendors(vendorsData || [])
       
-      // Calculate stats from real data
-      const totalCost = vendorsData?.reduce((sum, vendor) => sum + vendor.total_cost, 0) || 0
-      const totalSubscriptions = vendorsData?.reduce((sum, vendor) => sum + vendor.subscriptions_count, 0) || 0
-      
       setStats({
-        totalMonthlyCost: totalCost,
-        activeSubscriptions: totalSubscriptions,
+        totalMonthlyCost: subscriptionStats.totalMonthlyCost,
+        activeSubscriptions: subscriptionStats.activeSubscriptions,
         vendorCount: vendorsData?.length || 0,
-        upcomingRenewals: 0 // TODO: Calculate from subscriptions data
+        upcomingRenewals: subscriptionStats.upcomingRenewals.next30Days
       })
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
@@ -291,6 +292,20 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
+        {/* Renewal Alerts */}
+        <Card>
+          <CardContent className="p-0">
+            <RenewalAlerts 
+              limit={5} 
+              showActions={false}
+              onRenewalAction={fetchDashboardData}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Additional Actions */}
+      {vendors.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Get Started</CardTitle>
@@ -298,47 +313,50 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {vendors.length === 0 && (
-                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                      <Building2 className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-blue-900">Add your first vendor</p>
-                      <p className="text-sm text-blue-700">Start tracking your SaaS subscriptions</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex items-center">
-                  <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
-                    <Calendar className="w-4 h-4 text-gray-500" />
+                  <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                    <CreditCard className="w-4 h-4 text-blue-600" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-gray-500">Set renewal reminders</p>
-                    <p className="text-sm text-gray-400">Never miss a subscription renewal</p>
+                    <p className="font-medium text-blue-900">Add subscription details</p>
+                    <p className="text-sm text-blue-700">Track costs and renewal dates for your vendors</p>
+                  </div>
+                  <Button asChild size="sm" variant="outline">
+                    <Link href="/dashboard/subscriptions">
+                      View Subscriptions
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                    <Calendar className="w-4 h-4 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-green-900">Monitor renewals</p>
+                    <p className="text-sm text-green-700">Set up alerts for upcoming renewals</p>
                   </div>
                 </div>
               </div>
               
-              <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
                 <div className="flex items-center">
-                  <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
-                    <DollarSign className="w-4 h-4 text-gray-500" />
+                  <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                    <DollarSign className="w-4 h-4 text-purple-600" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-gray-500">Track costs</p>
-                    <p className="text-sm text-gray-400">Monitor your SaaS spending</p>
+                    <p className="font-medium text-purple-900">Analyze costs</p>
+                    <p className="text-sm text-purple-700">View spending trends and optimize costs</p>
                   </div>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
-      </div>
+      )}
     </div>
   )
 }

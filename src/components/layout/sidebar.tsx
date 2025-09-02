@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/auth-context'
 import { ActivityFeed } from './activity-feed'
 import {
+  BarChart3,
   Building2,
   CreditCard,
   FileText,
@@ -31,6 +32,11 @@ const navigationItems = [
     name: 'Subscriptions',
     href: '/dashboard/subscriptions',
     icon: CreditCard,
+  },
+  {
+    name: 'Analytics',
+    href: '/dashboard/analytics',
+    icon: BarChart3,
   },
   {
     name: 'Documents',

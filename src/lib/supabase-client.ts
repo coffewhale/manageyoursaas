@@ -203,9 +203,23 @@ export const supabaseService = {
   },
 
   async createSubscription(subscription: Omit<SubscriptionInsert, 'id' | 'organization_id' | 'created_at' | 'updated_at'>) {
+    // Get user's organization ID
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const userOrg = await this.getUserOrganization(user.id)
+    const orgId = userOrg.organization?.id || userOrg.profile.organization_id
+    
+    if (!orgId) {
+      throw new Error('User has no organization. Please complete organization setup.')
+    }
+
     const { data, error } = await supabase
       .from('subscriptions')
-      .insert(subscription)
+      .insert({
+        ...subscription,
+        organization_id: orgId
+      })
       .select()
       .single()
 
