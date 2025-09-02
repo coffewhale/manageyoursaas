@@ -49,7 +49,7 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
     contact_email: '',
     contact_phone: '',
     status: 'active',
-    category: '', // This could be the issue - Select component might interpret this as a value
+    category: '',
     description: '',
   })
   const [loading, setLoading] = useState(false)
@@ -242,7 +242,7 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
             
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
-              <Select value={formData.category} onValueChange={(value) => handleChange('category', value)}>
+              <Select value={formData.category || undefined} onValueChange={(value) => handleChange('category', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
