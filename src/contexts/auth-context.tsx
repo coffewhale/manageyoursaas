@@ -29,11 +29,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    console.log('🔍 AUTH DEBUG: isMockMode()', isMockMode())
+    
     if (isMockMode()) {
+      console.log('🔍 AUTH DEBUG: Initializing mock mode')
       // Handle mock mode
       const initMockSession = async () => {
         const mockSession = mockAuth.getSession()
         const { data } = await mockSession
+        
+        console.log('🔍 AUTH DEBUG: Mock session data:', data)
         
         if (data.session) {
           setSession(data.session as Session)
@@ -56,6 +61,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           } as Organization)
+          console.log('🔍 AUTH DEBUG: Mock user set:', data.session.user)
+        } else {
+          console.log('🔍 AUTH DEBUG: No mock session found')
         }
         setLoading(false)
       }
@@ -64,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Listen for mock auth changes
       mockAuth.onAuthStateChange((event, session) => {
+        console.log('🔍 AUTH DEBUG: Mock auth state change:', event, session)
         setSession(session as Session)
         setUser(session ? (session as any).user as User : null)
         if (event === 'SIGNED_OUT') {
@@ -76,15 +85,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Get initial session
+    console.log('🔍 AUTH DEBUG: Getting initial Supabase session')
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log('🔍 AUTH DEBUG: Initial session from Supabase:', session)
       setSession(session)
       setUser(session?.user ?? null)
       
       // Load profile if user is authenticated
       if (session?.user) {
+        console.log('🔍 AUTH DEBUG: Loading profile for user:', session.user.id)
         await loadUserProfile(session.user.id)
+      } else {
+        console.log('🔍 AUTH DEBUG: No user in session, not loading profile')
       }
       
+      console.log('🔍 AUTH DEBUG: Setting loading to false')
       setLoading(false)
     })
 
@@ -92,14 +107,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔍 AUTH DEBUG: Auth state change:', event, session)
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
 
       // Load profile and organization when user signs in
       if (event === 'SIGNED_IN' && session?.user) {
+        console.log('🔍 AUTH DEBUG: User signed in, loading profile')
         await loadUserProfile(session.user.id)
       } else if (event === 'SIGNED_OUT') {
+        console.log('🔍 AUTH DEBUG: User signed out, clearing profile')
         setProfile(null)
         setOrganization(null)
       }
