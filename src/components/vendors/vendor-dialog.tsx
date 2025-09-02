@@ -68,11 +68,21 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
         }
         const { data, error } = await apiService.getCategories()
         if (process.env.NODE_ENV === 'development') {
-          console.log('🔧 CATEGORIES DEBUG: Categories result:', { data, error })
+          console.log('🔧 CATEGORIES DEBUG: Categories result:', { data: data?.length, error, firstCategory: data?.[0] })
         }
         if (error) {
           console.error('Error fetching categories:', error)
-          setCategories([])
+          // Set fallback categories if there's an error
+          setCategories([
+            { id: 'fallback-1', name: 'Communication' },
+            { id: 'fallback-2', name: 'Development' },
+            { id: 'fallback-3', name: 'Design' },
+            { id: 'fallback-4', name: 'Analytics' },
+            { id: 'fallback-5', name: 'Marketing' },
+            { id: 'fallback-6', name: 'Productivity' },
+            { id: 'fallback-7', name: 'Security' },
+            { id: 'fallback-8', name: 'Other' }
+          ])
         } else {
           setCategories(data || [])
         }
@@ -81,7 +91,17 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
           console.log('🔧 CATEGORIES DEBUG: Exception:', error)
         }
         console.error('Error fetching categories:', error)
-        setCategories([])
+        // Set fallback categories if there's an exception
+        setCategories([
+          { id: 'fallback-1', name: 'Communication' },
+          { id: 'fallback-2', name: 'Development' },
+          { id: 'fallback-3', name: 'Design' },
+          { id: 'fallback-4', name: 'Analytics' },
+          { id: 'fallback-5', name: 'Marketing' },
+          { id: 'fallback-6', name: 'Productivity' },
+          { id: 'fallback-7', name: 'Security' },
+          { id: 'fallback-8', name: 'Other' }
+        ])
       }
     }
     fetchCategories()

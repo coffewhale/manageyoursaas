@@ -135,7 +135,7 @@ export const apiService = {
     }
   },
 
-  // Categories (for mock mode, return static data)
+  // Categories - return default categories for now since table might be empty
   async getCategories() {
     if (isMockMode()) {
       return {
@@ -149,6 +149,25 @@ export const apiService = {
         error: null
       }
     }
+    
+    // For production, return default categories for now
+    // TODO: Set up categories table with default data in production
+    return {
+      data: [
+        { id: 'prod-1', name: 'Communication', description: 'Communication tools', color: '#3B82F6' },
+        { id: 'prod-2', name: 'Development', description: 'Development tools', color: '#10B981' },
+        { id: 'prod-3', name: 'Design', description: 'Design tools', color: '#F59E0B' },
+        { id: 'prod-4', name: 'Analytics', description: 'Analytics tools', color: '#EF4444' },
+        { id: 'prod-5', name: 'Marketing', description: 'Marketing tools', color: '#8B5CF6' },
+        { id: 'prod-6', name: 'Productivity', description: 'Productivity tools', color: '#6366F1' },
+        { id: 'prod-7', name: 'Security', description: 'Security tools', color: '#EC4899' },
+        { id: 'prod-8', name: 'Other', description: 'Other tools', color: '#6B7280' }
+      ],
+      error: null
+    }
+    
+    /* 
+    // Original database query - uncomment when categories table is populated
     try {
       const data = await supabaseService.getCategories()
       // If no categories exist, return default categories
@@ -183,5 +202,6 @@ export const apiService = {
         error: null
       }
     }
+    */
   }
 }
