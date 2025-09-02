@@ -68,7 +68,18 @@ export const supabaseService = {
 
   // Vendor operations
   async getVendors() {
-    // Query vendors directly with subscription counts and total costs calculated
+    // Get current user and their organization for proper multi-tenancy
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const userOrg = await this.getUserOrganization(user.id)
+    const orgId = userOrg.organization?.id || userOrg.profile.organization_id
+    
+    if (!orgId) {
+      throw new Error('User has no organization. Please complete organization setup.')
+    }
+
+    // Query vendors for this organization only
     const { data, error } = await supabase
       .from('vendors')
       .select(`
@@ -78,17 +89,22 @@ export const supabaseService = {
         contact_email,
         contact_phone,
         status,
+        category_id,
         description,
         logo_url,
         organization_id,
         created_at,
         updated_at,
+        categories (
+          name
+        ),
         subscriptions (
           id,
           cost,
           status
         )
       `)
+      .eq('organization_id', orgId)
       .order('name')
 
     if (error) throw error
@@ -96,7 +112,7 @@ export const supabaseService = {
     // Calculate subscription counts and total costs client-side
     const vendorsWithStats = (data || []).map(vendor => ({
       ...vendor,
-      category: 'Uncategorized', // Default category for now since we don't have category data
+      category: vendor.categories?.name || 'Uncategorized',
       subscriptions_count: vendor.subscriptions?.length || 0,
       total_cost: vendor.subscriptions?.reduce((sum: number, sub: any) => {
         return sub.status === 'active' ? sum + (sub.cost || 0) : sum

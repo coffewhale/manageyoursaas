@@ -39,15 +39,28 @@ export default function VendorsPage() {
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
 
-  const fetchVendors = useCallback(() => {
-    if (!user) return
+  const fetchVendors = useCallback(async () => {
+    if (!user) {
+      setLoading(false)
+      return
+    }
     
-    // For now, just set empty vendors array and stop loading
-    setVendors([])
-    setLoading(false)
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔧 VENDORS DEBUG: Set empty vendors array, no API call')
+    try {
+      setLoading(true)
+      const { data: vendorsData, error } = await apiService.getVendors()
+      
+      if (error) {
+        console.error('Error fetching vendors:', error)
+        setVendors([]) // Set empty array on error
+        return
+      }
+      
+      setVendors(vendorsData || [])
+    } catch (error) {
+      console.error('Error fetching vendors:', error)
+      setVendors([])
+    } finally {
+      setLoading(false)
     }
   }, [user])
 
@@ -56,29 +69,30 @@ export default function VendorsPage() {
     fetchVendors()
   }, [fetchVendors])
   
-  // Real-time subscription disabled for now
-  // useEffect(() => {
-  //   if (!user) return
-  //   
-  //   const channel = supabase
-  //     .channel('vendors-changes')
-  //     .on(
-  //       'postgres_changes',
-  //       {
-  //         event: '*',
-  //         schema: 'public',
-  //         table: 'vendors'
-  //       },
-  //       () => {
-  //         fetchVendors()
-  //       }
-  //     )
-  //     .subscribe()
-  //   
-  //   return () => {
-  //     supabase.removeChannel(channel)
-  //   }
-  // }, [user, fetchVendors])
+  // Real-time subscription for vendor changes
+  useEffect(() => {
+    if (!user) return
+    
+    const channel = supabase
+      .channel('vendors-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'vendors'
+        },
+        () => {
+          // Refresh vendors when any vendor changes
+          fetchVendors()
+        }
+      )
+      .subscribe()
+    
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, fetchVendors])
 
   const filteredVendors = vendors.filter(vendor =>
     vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

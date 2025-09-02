@@ -40,7 +40,7 @@ export interface Database {
           full_name: string | null
           avatar_url: string | null
           organization_id: string | null
-          role: 'admin' | 'manager' | 'member'
+          role: 'owner' | 'admin' | 'member' | 'viewer'
           created_at: string
           updated_at: string
         }
@@ -50,7 +50,7 @@ export interface Database {
           full_name?: string | null
           avatar_url?: string | null
           organization_id?: string | null
-          role?: 'admin' | 'manager' | 'member'
+          role?: 'owner' | 'admin' | 'member' | 'viewer'
           created_at?: string
           updated_at?: string
         }
@@ -60,7 +60,7 @@ export interface Database {
           full_name?: string | null
           avatar_url?: string | null
           organization_id?: string | null
-          role?: 'admin' | 'manager' | 'member'
+          role?: 'owner' | 'admin' | 'member' | 'viewer'
           created_at?: string
           updated_at?: string
         }
