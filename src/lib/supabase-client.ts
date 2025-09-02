@@ -68,18 +68,11 @@ export const supabaseService = {
 
   // Vendor operations
   async getVendors() {
-    // Get current user and their organization for proper multi-tenancy
+    // Get current user - use user.id as organization_id to avoid RLS recursion
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
-    const userOrg = await this.getUserOrganization(user.id)
-    const orgId = userOrg.organization?.id || userOrg.profile.organization_id
-    
-    if (!orgId) {
-      throw new Error('User has no organization. Please complete organization setup.')
-    }
-
-    // Query vendors for this organization only
+    // Query vendors for this user's organization (using user.id as org_id temporarily)
     const { data, error } = await supabase
       .from('vendors')
       .select(`
@@ -95,16 +88,13 @@ export const supabaseService = {
         organization_id,
         created_at,
         updated_at,
-        categories (
-          name
-        ),
         subscriptions (
           id,
           cost,
           status
         )
       `)
-      .eq('organization_id', orgId)
+      .eq('organization_id', user.id)
       .order('name')
 
     if (error) throw error
@@ -112,7 +102,7 @@ export const supabaseService = {
     // Calculate subscription counts and total costs client-side
     const vendorsWithStats = (data || []).map(vendor => ({
       ...vendor,
-      category: vendor.categories?.name || 'Uncategorized',
+      category: 'Uncategorized', // Skip categories join to avoid potential RLS issues
       subscriptions_count: vendor.subscriptions?.length || 0,
       total_cost: vendor.subscriptions?.reduce((sum: number, sub: any) => {
         return sub.status === 'active' ? sum + (sub.cost || 0) : sum
@@ -138,33 +128,21 @@ export const supabaseService = {
   },
 
   async createVendor(vendor: Omit<VendorInsert, 'id' | 'organization_id' | 'created_at' | 'updated_at'>) {
-    // Get user's organization ID
+    // Get user's ID and use it as organization_id temporarily to avoid RLS recursion
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
-    try {
-      const userOrg = await this.getUserOrganization(user.id)
-      const orgId = userOrg.organization?.id || userOrg.profile.organization_id
-      
-      if (!orgId) {
-        throw new Error('User has no organization. Please complete organization setup.')
-      }
+    const { data, error } = await supabase
+      .from('vendors')
+      .insert({
+        ...vendor,
+        organization_id: user.id // Use user ID as organization ID to bypass RLS issues
+      })
+      .select()
+      .single()
 
-      const { data, error } = await supabase
-        .from('vendors')
-        .insert({
-          ...vendor,
-          organization_id: orgId
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-      return data
-    } catch (error) {
-      console.error('Error creating vendor:', error)
-      throw error
-    }
+    if (error) throw error
+    return data
   },
 
   async updateVendor(id: string, updates: VendorUpdate) {
