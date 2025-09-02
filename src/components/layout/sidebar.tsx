@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/auth-context'
@@ -51,10 +51,21 @@ const navigationItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { signOut, user } = useAuth()
 
   const handleSignOut = async () => {
-    await signOut()
+    try {
+      const { error } = await signOut()
+      if (error) {
+        console.error('Error signing out:', error)
+        return
+      }
+      // Redirect to home page after successful signout
+      router.push('/')
+    } catch (error) {
+      console.error('Error during signout:', error)
+    }
   }
 
   return (

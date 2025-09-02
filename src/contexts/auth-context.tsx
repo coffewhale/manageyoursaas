@@ -250,6 +250,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
+    if (isMockMode()) {
+      // Clear mock session
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('mock-session')
+      }
+      setUser(null)
+      setSession(null)
+      setProfile(null)
+      setOrganization(null)
+      return { error: null }
+    }
+
     const { error } = await supabase.auth.signOut()
     return { error }
   }
