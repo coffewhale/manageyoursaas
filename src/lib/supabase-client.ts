@@ -130,9 +130,9 @@ export const supabaseService = {
   async createVendor(vendor: Omit<VendorInsert, 'id' | 'organization_id' | 'created_at' | 'updated_at'>) {
     console.log('🏢 VENDOR DEBUG: createVendor function started')
     
-    // TEMPORARY: Skip auth check and use hardcoded org ID
+    // TEMPORARY: Skip auth check and use random UUID as org ID
     console.log('🏢 VENDOR DEBUG: Skipping auth check for testing...')
-    const tempOrgId = 'temp-org-id'
+    const tempOrgId = crypto.randomUUID()
 
     const vendorData = {
       ...vendor,
