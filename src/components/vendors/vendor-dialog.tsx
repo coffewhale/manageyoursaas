@@ -63,9 +63,23 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const { data } = await apiService.getCategories()
-        setCategories(data || [])
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔧 CATEGORIES DEBUG: Fetching categories')
+        }
+        const { data, error } = await apiService.getCategories()
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔧 CATEGORIES DEBUG: Categories result:', { data, error })
+        }
+        if (error) {
+          console.error('Error fetching categories:', error)
+          setCategories([])
+        } else {
+          setCategories(data || [])
+        }
       } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔧 CATEGORIES DEBUG: Exception:', error)
+        }
         console.error('Error fetching categories:', error)
         setCategories([])
       }
@@ -233,13 +247,20 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.name}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
+                  {categories.length === 0 ? (
+                    <SelectItem value="" disabled>Loading categories...</SelectItem>
+                  ) : (
+                    categories.map((category) => (
+                      <SelectItem key={category.id} value={category.name}>
+                        {category.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
+              {process.env.NODE_ENV === 'development' && (
+                <p className="text-xs text-gray-500">Categories loaded: {categories.length}</p>
+              )}
             </div>
           </div>
           
