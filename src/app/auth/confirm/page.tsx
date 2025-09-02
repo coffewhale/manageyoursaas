@@ -17,47 +17,70 @@ function ConfirmPageContent() {
   useEffect(() => {
     const confirmEmail = async () => {
       try {
-        const token = searchParams.get('token')
-        const type = searchParams.get('type')
+        console.log('🔗 CONFIRM DEBUG: Full URL:', window.location.href)
+        console.log('🔗 CONFIRM DEBUG: URL params:', Object.fromEntries(searchParams.entries()))
 
-        if (!token || !type) {
-          setStatus('error')
-          setMessage('Invalid confirmation link. Please check your email and try again.')
+        // Check if user is already authenticated (Supabase handled the verification)
+        const { data: { session } } = await supabase.auth.getSession()
+        console.log('🔗 CONFIRM DEBUG: Current session:', session?.user?.email)
+
+        if (session?.user) {
+          console.log('🔗 CONFIRM DEBUG: User is authenticated after confirmation')
+          setStatus('success')
+          setMessage('Your email has been confirmed successfully!')
           return
         }
 
-        if (type === 'signup') {
-          const { error } = await supabase.auth.verifyOtp({
-            token_hash: token,
-            type: 'signup'
-          })
+        // Fallback: Try manual verification if we have token/type params
+        const token = searchParams.get('token')
+        const type = searchParams.get('type')
 
-          if (error) {
-            setStatus('error')
-            setMessage(error.message || 'Failed to confirm email. The link may have expired.')
-          } else {
-            setStatus('success')
-            setMessage('Your email has been confirmed successfully!')
-          }
-        } else if (type === 'recovery') {
-          // Handle password recovery
-          const { error } = await supabase.auth.verifyOtp({
-            token_hash: token,
-            type: 'recovery'
-          })
+        if (token && type) {
+          console.log('🔗 CONFIRM DEBUG: Attempting manual verification with token')
+          
+          if (type === 'signup') {
+            const { error } = await supabase.auth.verifyOtp({
+              token_hash: token,
+              type: 'signup'
+            })
 
-          if (error) {
-            setStatus('error')
-            setMessage(error.message || 'Failed to confirm password reset. The link may have expired.')
+            console.log('🔗 CONFIRM DEBUG: Manual verification result:', { error })
+
+            if (error) {
+              console.log('🔗 CONFIRM DEBUG: Manual verification failed:', error.message)
+              setStatus('error')
+              setMessage(error.message || 'Failed to confirm email. The link may have expired.')
+            } else {
+              console.log('🔗 CONFIRM DEBUG: Manual verification successful!')
+              setStatus('success')
+              setMessage('Your email has been confirmed successfully!')
+            }
+          } else if (type === 'recovery') {
+            // Handle password recovery
+            const { error } = await supabase.auth.verifyOtp({
+              token_hash: token,
+              type: 'recovery'
+            })
+
+            if (error) {
+              setStatus('error')
+              setMessage(error.message || 'Failed to confirm password reset. The link may have expired.')
+            } else {
+              setStatus('success')
+              setMessage('Password reset confirmed. You can now set a new password.')
+            }
           } else {
-            setStatus('success')
-            setMessage('Password reset confirmed. You can now set a new password.')
+            setStatus('error')
+            setMessage('Invalid confirmation type.')
           }
         } else {
+          // No session and no token - something went wrong
+          console.log('🔗 CONFIRM DEBUG: No session and no token parameters')
           setStatus('error')
-          setMessage('Invalid confirmation type.')
+          setMessage('Email confirmation failed. The link may have expired or been used already.')
         }
       } catch (error) {
+        console.log('🔗 CONFIRM DEBUG: Exception caught:', error)
         setStatus('error')
         setMessage('An unexpected error occurred. Please try again.')
       }
