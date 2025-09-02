@@ -132,16 +132,32 @@ export const supabaseService = {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
+    const vendorData = {
+      ...vendor,
+      organization_id: user.id // Use user ID as organization ID to bypass RLS issues
+    }
+    
+    console.log('🏢 VENDOR DEBUG: Creating vendor with data:', vendorData)
+    console.log('🏢 VENDOR DEBUG: User ID:', user.id)
+
     const { data, error } = await supabase
       .from('vendors')
-      .insert({
-        ...vendor,
-        organization_id: user.id // Use user ID as organization ID to bypass RLS issues
-      })
+      .insert(vendorData)
       .select()
       .single()
 
-    if (error) throw error
+    console.log('🏢 VENDOR DEBUG: Insert result:', { data, error })
+    
+    if (error) {
+      console.error('🏢 VENDOR DEBUG: Insert error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      })
+      throw error
+    }
+    
     return data
   },
 
