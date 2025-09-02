@@ -120,12 +120,28 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
         description: formData.description || null,
       }
 
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 VENDOR DEBUG: Submitting vendor data:', vendorData)
+        console.log('🔧 VENDOR DEBUG: User:', user?.email)
+        console.log('🔧 VENDOR DEBUG: Is editing:', isEditing)
+      }
+
       if (isEditing && vendor?.id) {
-        const { error } = await apiService.updateVendor(vendor.id, vendorData)
+        const { data, error } = await apiService.updateVendor(vendor.id, vendorData)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔧 VENDOR DEBUG: Update result:', { data, error })
+        }
         if (error) throw error
       } else {
-        const { error } = await apiService.createVendor(vendorData)
+        const { data, error } = await apiService.createVendor(vendorData)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔧 VENDOR DEBUG: Create result:', { data, error })
+        }
         if (error) throw error
+      }
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 VENDOR DEBUG: Vendor operation successful, refreshing list')
       }
       
       // Notify parent component to refresh data
@@ -133,6 +149,9 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
       
       onClose()
     } catch (err) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 VENDOR DEBUG: Error occurred:', err)
+      }
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setLoading(false)

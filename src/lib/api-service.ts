@@ -9,29 +9,48 @@ export const apiService = {
     if (isMockMode()) {
       return mockAPI.getVendors()
     }
-    return { data: await supabaseService.getVendors(), error: null }
+    try {
+      const data = await supabaseService.getVendors()
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error : new Error('Unknown error') }
+    }
   },
 
   async createVendor(vendorData: Record<string, unknown>) {
     if (isMockMode()) {
       return mockAPI.createVendor(vendorData)
     }
-    return { data: await supabaseService.createVendor(vendorData as Parameters<typeof supabaseService.createVendor>[0]), error: null }
+    try {
+      const data = await supabaseService.createVendor(vendorData as Parameters<typeof supabaseService.createVendor>[0])
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error : new Error('Unknown error') }
+    }
   },
 
   async updateVendor(id: string, vendorData: Record<string, unknown>) {
     if (isMockMode()) {
       return mockAPI.updateVendor(id, vendorData)
     }
-    return { data: await supabaseService.updateVendor(id, vendorData as Parameters<typeof supabaseService.updateVendor>[1]), error: null }
+    try {
+      const data = await supabaseService.updateVendor(id, vendorData as Parameters<typeof supabaseService.updateVendor>[1])
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error : new Error('Unknown error') }
+    }
   },
 
   async deleteVendor(id: string) {
     if (isMockMode()) {
       return mockAPI.deleteVendor(id)
     }
-    await supabaseService.deleteVendor(id)
-    return { data: null, error: null }
+    try {
+      await supabaseService.deleteVendor(id)
+      return { data: null, error: null }
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error : new Error('Unknown error') }
+    }
   },
 
   // Subscription operations
@@ -39,29 +58,48 @@ export const apiService = {
     if (isMockMode()) {
       return mockAPI.getSubscriptions()
     }
-    return { data: await supabaseService.getSubscriptions(), error: null }
+    try {
+      const data = await supabaseService.getSubscriptions()
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error : new Error('Unknown error') }
+    }
   },
 
   async createSubscription(subscriptionData: Record<string, unknown>) {
     if (isMockMode()) {
       return mockAPI.createSubscription(subscriptionData)
     }
-    return { data: await supabaseService.createSubscription(subscriptionData as Parameters<typeof supabaseService.createSubscription>[0]), error: null }
+    try {
+      const data = await supabaseService.createSubscription(subscriptionData as Parameters<typeof supabaseService.createSubscription>[0])
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error : new Error('Unknown error') }
+    }
   },
 
   async updateSubscription(id: string, subscriptionData: Record<string, unknown>) {
     if (isMockMode()) {
       return mockAPI.updateSubscription(id, subscriptionData)
     }
-    return { data: await supabaseService.updateSubscription(id, subscriptionData as Parameters<typeof supabaseService.updateSubscription>[1]), error: null }
+    try {
+      const data = await supabaseService.updateSubscription(id, subscriptionData as Parameters<typeof supabaseService.updateSubscription>[1])
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error : new Error('Unknown error') }
+    }
   },
 
   async deleteSubscription(id: string) {
     if (isMockMode()) {
       return mockAPI.deleteSubscription(id)
     }
-    await supabaseService.deleteSubscription(id)
-    return { data: null, error: null }
+    try {
+      await supabaseService.deleteSubscription(id)
+      return { data: null, error: null }
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error : new Error('Unknown error') }
+    }
   },
 
   // Document operations
@@ -69,7 +107,12 @@ export const apiService = {
     if (isMockMode()) {
       return mockAPI.getDocuments()
     }
-    return { data: await supabaseService.getDocuments(), error: null }
+    try {
+      const data = await supabaseService.getDocuments()
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error : new Error('Unknown error') }
+    }
   },
 
   async uploadDocument(documentData: Record<string, unknown>) {
@@ -77,15 +120,19 @@ export const apiService = {
       return mockAPI.uploadDocument(documentData)
     }
     // For real mode, would need proper file handling
-    throw new Error('Document upload not implemented for production yet')
+    return { data: null, error: new Error('Document upload not implemented for production yet') }
   },
 
   async deleteDocument(id: string) {
     if (isMockMode()) {
       return mockAPI.deleteDocument(id)
     }
-    await supabaseService.deleteDocument(id)
-    return { data: null, error: null }
+    try {
+      await supabaseService.deleteDocument(id)
+      return { data: null, error: null }
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error : new Error('Unknown error') }
+    }
   },
 
   // Categories (for mock mode, return static data)
@@ -102,6 +149,11 @@ export const apiService = {
         error: null
       }
     }
-    return { data: await supabaseService.getCategories(), error: null }
+    try {
+      const data = await supabaseService.getCategories()
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error : new Error('Unknown error') }
+    }
   }
 }

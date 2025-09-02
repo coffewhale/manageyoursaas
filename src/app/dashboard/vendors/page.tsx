@@ -44,14 +44,32 @@ export default function VendorsPage() {
     
     try {
       setLoading(true)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 VENDORS DEBUG: Starting to fetch vendors for user:', user?.email)
+      }
+      
       const { data: vendorsData, error } = await apiService.getVendors()
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 VENDORS DEBUG: Fetch result:', { data: vendorsData?.length, error })
+      }
       
       if (error) throw error
       
       setVendors(vendorsData || [])
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 VENDORS DEBUG: Successfully set vendors:', vendorsData?.length || 0)
+      }
     } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 VENDORS DEBUG: Error fetching vendors:', error)
+      }
       console.error('Error fetching vendors:', error)
     } finally {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 VENDORS DEBUG: Setting loading to false')
+      }
       setLoading(false)
     }
   }, [user])
