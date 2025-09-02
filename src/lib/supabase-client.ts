@@ -61,13 +61,11 @@ export const supabaseService = {
         contact_email,
         contact_phone,
         status,
-        category_id,
         description,
         logo_url,
         organization_id,
         created_at,
         updated_at,
-        categories (name),
         subscriptions (
           id,
           cost,
@@ -81,7 +79,7 @@ export const supabaseService = {
     // Calculate subscription counts and total costs client-side
     const vendorsWithStats = (data || []).map(vendor => ({
       ...vendor,
-      category: vendor.categories?.name || 'Uncategorized',
+      category: 'Uncategorized', // Default category for now since we don't have category data
       subscriptions_count: vendor.subscriptions?.length || 0,
       total_cost: vendor.subscriptions?.reduce((sum: number, sub: any) => {
         return sub.status === 'active' ? sum + (sub.cost || 0) : sum

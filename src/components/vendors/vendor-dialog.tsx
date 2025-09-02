@@ -102,17 +102,13 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
     try {
       if (!user) throw new Error('User not authenticated')
       
-      // Find category ID
-      const category = categories.find(c => c.name === formData.category)
-      
       const vendorData = {
         name: formData.name,
         website: formData.website || null,
         contact_email: formData.contact_email || null,
         contact_phone: formData.contact_phone || null,
         status: formData.status,
-        category_id: category?.id || null,
-        category: formData.category, // Also include category name for mock mode
+        category_id: null, // Set to null for now since we don't have categories table
         description: formData.description || null,
       }
 
