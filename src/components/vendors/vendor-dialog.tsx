@@ -248,7 +248,7 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
                 </SelectTrigger>
                 <SelectContent>
                   {categories.length === 0 ? (
-                    <SelectItem value="" disabled>Loading categories...</SelectItem>
+                    <SelectItem value="loading" disabled>Loading categories...</SelectItem>
                   ) : (
                     categories.map((category) => (
                       <SelectItem key={category.id} value={category.name}>
