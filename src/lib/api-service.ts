@@ -18,20 +18,13 @@ export const apiService = {
   },
 
   async createVendor(vendorData: Record<string, unknown>) {
-    console.log('📡 API DEBUG: createVendor called with:', vendorData)
-    
     if (isMockMode()) {
-      console.log('📡 API DEBUG: Using mock mode')
       return mockAPI.createVendor(vendorData)
     }
-    
-    console.log('📡 API DEBUG: Using production mode, calling supabaseService')
     try {
       const data = await supabaseService.createVendor(vendorData as Parameters<typeof supabaseService.createVendor>[0])
-      console.log('📡 API DEBUG: supabaseService.createVendor success:', data)
       return { data, error: null }
     } catch (error) {
-      console.error('📡 API DEBUG: supabaseService.createVendor error:', error)
       return { data: null, error: error instanceof Error ? error : new Error('Unknown error') }
     }
   },
