@@ -14,17 +14,21 @@ export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
-    console.log('🏠 HOME DEBUG: Auth state changed:', { user: user?.id, loading, session: session?.user?.id })
-    console.log('🏠 HOME DEBUG: Full user object:', user)
-    console.log('🏠 HOME DEBUG: Full session object:', session)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🏠 HOME DEBUG: Auth state changed:', { hasUser: !!user, loading })
+    }
     
     if (!loading && user) {
-      console.log('🏠 HOME DEBUG: Redirecting to dashboard because user exists and not loading')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🏠 HOME DEBUG: Redirecting to dashboard because user exists and not loading')
+      }
       router.push('/dashboard')
-    } else if (!loading && !user) {
-      console.log('🏠 HOME DEBUG: Staying on home page - no user found')
-    } else if (loading) {
-      console.log('🏠 HOME DEBUG: Still loading auth state')
+    } else if (process.env.NODE_ENV === 'development') {
+      if (!loading && !user) {
+        console.log('🏠 HOME DEBUG: Staying on home page - no user found')
+      } else if (loading) {
+        console.log('🏠 HOME DEBUG: Still loading auth state')
+      }
     }
   }, [user, loading, router, session])
 

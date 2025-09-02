@@ -17,15 +17,21 @@ function ConfirmPageContent() {
   useEffect(() => {
     const confirmEmail = async () => {
       try {
-        console.log('🔗 CONFIRM DEBUG: Full URL:', window.location.href)
-        console.log('🔗 CONFIRM DEBUG: URL params:', Object.fromEntries(searchParams.entries()))
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔗 CONFIRM DEBUG: Full URL:', window.location.href)
+          console.log('🔗 CONFIRM DEBUG: URL params:', Object.fromEntries(searchParams.entries()))
+        }
 
         // Check if user is already authenticated (Supabase handled the verification)
         const { data: { session } } = await supabase.auth.getSession()
-        console.log('🔗 CONFIRM DEBUG: Current session:', session?.user?.email)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔗 CONFIRM DEBUG: Current session:', session?.user?.email || 'no user')
+        }
 
         if (session?.user) {
-          console.log('🔗 CONFIRM DEBUG: User is authenticated after confirmation')
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔗 CONFIRM DEBUG: User is authenticated after confirmation')
+          }
           setStatus('success')
           setMessage('Your email has been confirmed successfully!')
           return
@@ -36,7 +42,9 @@ function ConfirmPageContent() {
         const type = searchParams.get('type')
 
         if (token && type) {
-          console.log('🔗 CONFIRM DEBUG: Attempting manual verification with token')
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔗 CONFIRM DEBUG: Attempting manual verification with token')
+          }
           
           if (type === 'signup') {
             const { error } = await supabase.auth.verifyOtp({
@@ -44,14 +52,20 @@ function ConfirmPageContent() {
               type: 'signup'
             })
 
-            console.log('🔗 CONFIRM DEBUG: Manual verification result:', { error })
+            if (process.env.NODE_ENV === 'development') {
+              console.log('🔗 CONFIRM DEBUG: Manual verification result:', error ? 'error' : 'success')
+            }
 
             if (error) {
-              console.log('🔗 CONFIRM DEBUG: Manual verification failed:', error.message)
+              if (process.env.NODE_ENV === 'development') {
+                console.log('🔗 CONFIRM DEBUG: Manual verification failed:', error.message)
+              }
               setStatus('error')
               setMessage(error.message || 'Failed to confirm email. The link may have expired.')
             } else {
-              console.log('🔗 CONFIRM DEBUG: Manual verification successful!')
+              if (process.env.NODE_ENV === 'development') {
+                console.log('🔗 CONFIRM DEBUG: Manual verification successful!')
+              }
               setStatus('success')
               setMessage('Your email has been confirmed successfully!')
             }
@@ -75,12 +89,16 @@ function ConfirmPageContent() {
           }
         } else {
           // No session and no token - something went wrong
-          console.log('🔗 CONFIRM DEBUG: No session and no token parameters')
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔗 CONFIRM DEBUG: No session and no token parameters')
+          }
           setStatus('error')
           setMessage('Email confirmation failed. The link may have expired or been used already.')
         }
       } catch (error) {
-        console.log('🔗 CONFIRM DEBUG: Exception caught:', error)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔗 CONFIRM DEBUG: Exception caught:', error)
+        }
         setStatus('error')
         setMessage('An unexpected error occurred. Please try again.')
       }

@@ -29,16 +29,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    console.log('🔍 AUTH DEBUG: isMockMode()', isMockMode())
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 AUTH DEBUG: isMockMode()', isMockMode())
+    }
     
     if (isMockMode()) {
-      console.log('🔍 AUTH DEBUG: Initializing mock mode')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 AUTH DEBUG: Initializing mock mode')
+      }
       // Handle mock mode
       const initMockSession = async () => {
         const mockSession = mockAuth.getSession()
         const { data } = await mockSession
         
-        console.log('🔍 AUTH DEBUG: Mock session data:', data)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 AUTH DEBUG: Mock session found:', data.session ? 'yes' : 'no')
+        }
         
         if (data.session) {
           setSession(data.session as Session)
@@ -61,8 +67,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           } as Organization)
-          console.log('🔍 AUTH DEBUG: Mock user set:', data.session.user)
-        } else {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔍 AUTH DEBUG: Mock user set:', data.session.user.email)
+          }
+        } else if (process.env.NODE_ENV === 'development') {
           console.log('🔍 AUTH DEBUG: No mock session found')
         }
         setLoading(false)
@@ -72,7 +80,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Listen for mock auth changes
       mockAuth.onAuthStateChange((event, session) => {
-        console.log('🔍 AUTH DEBUG: Mock auth state change:', event, session)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 AUTH DEBUG: Mock auth state change:', event, session ? 'user present' : 'no user')
+        }
         setSession(session as Session)
         setUser(session ? (session as any).user as User : null)
         if (event === 'SIGNED_OUT') {
@@ -85,21 +95,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Get initial session
-    console.log('🔍 AUTH DEBUG: Getting initial Supabase session')
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 AUTH DEBUG: Getting initial Supabase session')
+    }
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      console.log('🔍 AUTH DEBUG: Initial session from Supabase:', session)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 AUTH DEBUG: Initial session found:', session?.user?.email || 'no user')
+      }
       setSession(session)
       setUser(session?.user ?? null)
       
       // Load profile if user is authenticated
       if (session?.user) {
-        console.log('🔍 AUTH DEBUG: Loading profile for user:', session.user.id)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 AUTH DEBUG: Loading profile for user:', session.user.id)
+        }
         await loadUserProfile(session.user.id)
-      } else {
+      } else if (process.env.NODE_ENV === 'development') {
         console.log('🔍 AUTH DEBUG: No user in session, not loading profile')
       }
       
-      console.log('🔍 AUTH DEBUG: Setting loading to false')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 AUTH DEBUG: Setting loading to false')
+      }
       setLoading(false)
     })
 
@@ -107,17 +125,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔍 AUTH DEBUG: Auth state change:', event, session)
+      // Only log auth events in development, never tokens
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 AUTH DEBUG: Auth state change:', event, session?.user?.email || 'no user')
+      }
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
 
       // Load profile and organization when user signs in
       if (event === 'SIGNED_IN' && session?.user) {
-        console.log('🔍 AUTH DEBUG: User signed in, loading profile')
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 AUTH DEBUG: User signed in, loading profile')
+        }
         await loadUserProfile(session.user.id)
       } else if (event === 'SIGNED_OUT') {
-        console.log('🔍 AUTH DEBUG: User signed out, clearing profile')
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 AUTH DEBUG: User signed out, clearing profile')
+        }
         setProfile(null)
         setOrganization(null)
       }
