@@ -49,7 +49,7 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
     contact_email: '',
     contact_phone: '',
     status: 'active',
-    category: '',
+    category: '', // This could be the issue - Select component might interpret this as a value
     description: '',
   })
   const [loading, setLoading] = useState(false)
@@ -250,11 +250,13 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
                   {categories.length === 0 ? (
                     <SelectItem value="loading" disabled>Loading categories...</SelectItem>
                   ) : (
-                    categories.map((category) => (
-                      <SelectItem key={category.id} value={category.name}>
-                        {category.name}
-                      </SelectItem>
-                    ))
+                    categories
+                      .filter(category => category.name && category.name.trim() !== '') // Filter out empty names
+                      .map((category) => (
+                        <SelectItem key={category.id} value={category.name}>
+                          {category.name}
+                        </SelectItem>
+                      ))
                   )}
                 </SelectContent>
               </Select>
