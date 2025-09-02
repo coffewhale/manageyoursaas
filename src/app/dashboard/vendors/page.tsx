@@ -39,74 +39,46 @@ export default function VendorsPage() {
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
 
-  const fetchVendors = useCallback(async () => {
+  const fetchVendors = useCallback(() => {
     if (!user) return
     
-    try {
-      setLoading(true)
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 VENDORS DEBUG: Starting to fetch vendors for user:', user?.email)
-      }
-      
-      const { data: vendorsData, error } = await apiService.getVendors()
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 VENDORS DEBUG: Fetch result:', { data: vendorsData?.length, error })
-      }
-      
-      if (error) throw error
-      
-      setVendors(vendorsData || [])
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 VENDORS DEBUG: Successfully set vendors:', vendorsData?.length || 0)
-      }
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 VENDORS DEBUG: Error fetching vendors:', error)
-      }
-      console.error('Error fetching vendors:', error)
-    } finally {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 VENDORS DEBUG: Setting loading to false')
-      }
-      setLoading(false)
+    // For now, just set empty vendors array and stop loading
+    setVendors([])
+    setLoading(false)
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔧 VENDORS DEBUG: Set empty vendors array, no API call')
     }
   }, [user])
 
-  // Fetch vendors from Supabase
+  // Initialize vendors
   useEffect(() => {
     fetchVendors()
   }, [fetchVendors])
   
-  // Set up real-time subscription (only for production mode)
-  useEffect(() => {
-    if (!user) return
-    
-    // Skip real-time subscriptions in mock mode
-    const isMock = process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://placeholder.supabase.co'
-    if (isMock) return
-    
-    const channel = supabase
-      .channel('vendors-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'vendors'
-        },
-        () => {
-          // Refresh vendors when any vendor changes
-          fetchVendors()
-        }
-      )
-      .subscribe()
-    
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [user, fetchVendors])
+  // Real-time subscription disabled for now
+  // useEffect(() => {
+  //   if (!user) return
+  //   
+  //   const channel = supabase
+  //     .channel('vendors-changes')
+  //     .on(
+  //       'postgres_changes',
+  //       {
+  //         event: '*',
+  //         schema: 'public',
+  //         table: 'vendors'
+  //       },
+  //       () => {
+  //         fetchVendors()
+  //       }
+  //     )
+  //     .subscribe()
+  //   
+  //   return () => {
+  //     supabase.removeChannel(channel)
+  //   }
+  // }, [user, fetchVendors])
 
   const filteredVendors = vendors.filter(vendor =>
     vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
