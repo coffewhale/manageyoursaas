@@ -54,58 +54,20 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [categories, setCategories] = useState<Array<{id: string, name: string}>>([])
+  const [categories] = useState<Array<{id: string, name: string}>>([
+    { id: 'communication', name: 'Communication' },
+    { id: 'development', name: 'Development' },
+    { id: 'design', name: 'Design' },
+    { id: 'analytics', name: 'Analytics' },
+    { id: 'marketing', name: 'Marketing' },
+    { id: 'productivity', name: 'Productivity' },
+    { id: 'security', name: 'Security' },
+    { id: 'other', name: 'Other' }
+  ])
   const { user } = useAuth()
 
   const isEditing = !!vendor
 
-  // Fetch categories
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔧 CATEGORIES DEBUG: Fetching categories')
-        }
-        const { data, error } = await apiService.getCategories()
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔧 CATEGORIES DEBUG: Categories result:', { data: data?.length, error, firstCategory: data?.[0] })
-        }
-        if (error) {
-          console.error('Error fetching categories:', error)
-          // Set fallback categories if there's an error
-          setCategories([
-            { id: 'fallback-1', name: 'Communication' },
-            { id: 'fallback-2', name: 'Development' },
-            { id: 'fallback-3', name: 'Design' },
-            { id: 'fallback-4', name: 'Analytics' },
-            { id: 'fallback-5', name: 'Marketing' },
-            { id: 'fallback-6', name: 'Productivity' },
-            { id: 'fallback-7', name: 'Security' },
-            { id: 'fallback-8', name: 'Other' }
-          ])
-        } else {
-          setCategories(data || [])
-        }
-      } catch (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔧 CATEGORIES DEBUG: Exception:', error)
-        }
-        console.error('Error fetching categories:', error)
-        // Set fallback categories if there's an exception
-        setCategories([
-          { id: 'fallback-1', name: 'Communication' },
-          { id: 'fallback-2', name: 'Development' },
-          { id: 'fallback-3', name: 'Design' },
-          { id: 'fallback-4', name: 'Analytics' },
-          { id: 'fallback-5', name: 'Marketing' },
-          { id: 'fallback-6', name: 'Productivity' },
-          { id: 'fallback-7', name: 'Security' },
-          { id: 'fallback-8', name: 'Other' }
-        ])
-      }
-    }
-    fetchCategories()
-  }, [])
 
   useEffect(() => {
     if (vendor) {
@@ -280,9 +242,6 @@ export function VendorDialog({ isOpen, onClose, vendor, onVendorUpdated }: Vendo
                   )}
                 </SelectContent>
               </Select>
-              {process.env.NODE_ENV === 'development' && (
-                <p className="text-xs text-gray-500">Categories loaded: {categories.length}</p>
-              )}
             </div>
           </div>
           
